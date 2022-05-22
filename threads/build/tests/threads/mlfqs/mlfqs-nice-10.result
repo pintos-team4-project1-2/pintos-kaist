@@ -1,14 +1,9 @@
 FAIL
-Some tick counts were missing or differed from those expected by more than 25.
-thread   actual <-> expected explanation
------- -------- --- -------- ----------------------------------------
-     0      301 <<< 672      Too small, by 346.
-     1      301 <<< 588      Too small, by 262.
-     2      300 <<< 492      Too small, by 167.
-     3      301 <<< 408      Too small, by 82.
-     4      300  =  316      
-     5      300 >>> 232      Too big, by 43.
-     6      301 >>> 152      Too big, by 124.
-     7      301 >>> 92       Too big, by 184.
-     8      300 >>> 40       Too big, by 235.
-     9      301 >>> 8        Too big, by 268.
+Kernel panic in run: PANIC at ../../tests/threads/tests.c:60 in run_test(): no test named "mlfqs-nice-10"
+Call stack: 0x80042136e2 0x8004216b94 0x8004206644 0x8004206795 0x8004206128
+Translation of call stack:
+0x00000080042136e2: debug_panic (lib/kernel/debug.c:32)
+0x0000008004216b94: run_test (tests/threads/tests.c:61)
+0x0000008004206644: run_task (threads/init.c:252)
+0x0000008004206795: run_actions (threads/init.c:297)
+0x0000008004206128: main (threads/init.c:125)

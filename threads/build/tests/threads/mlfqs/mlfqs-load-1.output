@@ -1,4 +1,11 @@
-Kernel command line: -q -mlfqs run mlfqs-load-1
+c[?7l[2J[0mSeaBIOS (version 1.13.0-1ubuntu1.1)
+
+
+iPXE (http://ipxe.org) 00:03.0 CA00 PCI2.10 PnP PMM+0138CA10+012CCA10 CA00
+Press Ctrl-B to configure iPXE (PCI 00:03.0)...                                                                               
+
+
+Booting from Hard Disk..Kernel command line: -q -mlfqs run mlfqs-load-1
 0 ~ 9fc00 1
 100000 ~ 13e0000 1
 Pintos booting with: 
@@ -7,14 +14,11 @@ Pintos booting with:
 Calibrating timer...  157,081,600 loops/s.
 Boot complete.
 Executing 'mlfqs-load-1':
-(mlfqs-load-1) begin
-(mlfqs-load-1) spinning for up to 45 seconds, please wait...
-(mlfqs-load-1) FAIL: load average stayed below 0.5 for more than 45 seconds
-Kernel PANIC at ../../tests/threads/tests.c:93 in fail(): test failed
-Call stack: 0x80042133f2 0x80042169f4 0x8004219a30 0x800421682e 0x8004206636 0x8004206783 0x8004206120.
+Kernel PANIC at ../../tests/threads/tests.c:60 in run_test(): no test named "mlfqs-load-1"
+Call stack: 0x80042136e2 0x8004216b94 0x8004206644 0x8004206795 0x8004206128.
 The `backtrace' program can make call stacks useful.
 Read "Backtraces" in the "Debugging Tools" chapter
 of the Pintos documentation for more information.
-Timer: 4623 ticks
-Thread: 0 idle ticks, 4623 kernel ticks, 0 user ticks
+Timer: 23 ticks
+Thread: 0 idle ticks, 23 kernel ticks, 0 user ticks
 Console: 
