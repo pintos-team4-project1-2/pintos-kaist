@@ -71,6 +71,7 @@ static void do_schedule(int status);
 static void schedule (void);
 static tid_t allocate_tid (void);
 
+
 /* Returns true if T appears to point to a valid thread. */
 #define is_thread(t) ((t) != NULL && (t)->magic == THREAD_MAGIC)
 
@@ -216,9 +217,8 @@ thread_create (const char *name, int priority,
 	thread_unblock (t);
 
 	curr = thread_current ();
-	if (curr->priority < priority){
+	if (curr->priority < priority)
 		thread_yield();
-	}
 
 	return tid;
 }
@@ -248,13 +248,12 @@ thread_block (void) {
 void
 thread_unblock (struct thread *t) {
 	enum intr_level old_level;
-	void *aux;
 
 	ASSERT (is_thread (t));
 
 	old_level = intr_disable ();
 	ASSERT (t->status == THREAD_BLOCKED);
-	list_insert_ordered (&ready_list, &t->elem, &cmp_priority, aux);
+	list_insert_ordered (&ready_list, &t->elem, &cmp_priority, NULL);
 	t->status = THREAD_READY;
 	intr_set_level (old_level);
 }
@@ -312,14 +311,13 @@ void
 thread_yield (void) {
 	struct thread *curr = thread_current ();
 	enum intr_level old_level;
-	void *aux;
 
 	// interrupt가 없을 때만 실행
 	ASSERT (!intr_context ());
 
 	old_level = intr_disable ();
 	if (curr != idle_thread)
-		list_insert_ordered (&ready_list, &curr->elem, &cmp_priority, aux);
+		list_insert_ordered (&ready_list, &curr->elem, &cmp_priority, NULL);
 	do_schedule (THREAD_READY);
 	intr_set_level (old_level);
 }
@@ -330,18 +328,16 @@ thread_set_priority (int new_priority) {
 	struct thread *first_ready_t = list_entry(list_begin(&ready_list), struct thread, elem);
 
 	thread_current ()->priority = new_priority;
-	if (new_priority < first_ready_t->priority){
+	if (new_priority < first_ready_t->priority)
 		thread_yield();
-	}
 }
 
 void
 test_max_priority (void) {
 	struct thread *first_ready_t = list_entry(list_begin(&ready_list), struct thread, elem);
-	
-	if (thread_current ()->priority < first_ready_t->priority){
+
+	if (thread_current ()->priority < first_ready_t->priority)
 		thread_yield();
-	}
 }
 
 bool
