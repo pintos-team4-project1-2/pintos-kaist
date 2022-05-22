@@ -4,6 +4,8 @@
 #include <random.h>
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
+
 #include "threads/flags.h"
 #include "threads/interrupt.h"
 #include "threads/intr-stubs.h"
@@ -28,6 +30,9 @@
    that are ready to run but not actually running. */
 static struct list ready_list;
 
+/* Lisf of processes in THREAD_BLOCK state */
+static struct list sleep_list;
+
 /* Idle thread. */
 static struct thread *idle_thread;
 
@@ -44,6 +49,9 @@ static struct list destruction_req;
 static long long idle_ticks;    /* # of timer ticks spent idle. */
 static long long kernel_ticks;  /* # of timer ticks in kernel threads. */
 static long long user_ticks;    /* # of timer ticks in user programs. */
+
+
+long long min_wakeup_ticks = INT64_MAX; /* # of minimum ticks in sleep list */
 
 /* Scheduling. */
 #define TIME_SLICE 4            /* # of timer ticks to give each thread. */
@@ -105,9 +113,10 @@ thread_init (void) {
 	};
 	lgdt (&gdt_ds);
 
-	/* Init the globla thread context */
+	/* Init the global thread context */
 	lock_init (&tid_lock);
 	list_init (&ready_list);
+	list_init(&sleep_list);
 	list_init (&destruction_req);
 
 	/* Set up a thread structure for the running thread. */
@@ -183,7 +192,6 @@ thread_create (const char *name, int priority,
 	tid_t tid;
 
 	ASSERT (function != NULL);
-
 	/* Allocate thread. */
 	t = palloc_get_page (PAL_ZERO);
 	if (t == NULL)
@@ -299,6 +307,7 @@ thread_yield (void) {
 	struct thread *curr = thread_current ();
 	enum intr_level old_level;
 
+	// interrupt가 없을 때만 실행
 	ASSERT (!intr_context ());
 
 	old_level = intr_disable ();
@@ -451,6 +460,48 @@ do_iret (struct intr_frame *tf) {
 			"iretq"
 			: : "g" ((uint64_t) tf) : "memory");
 }
+
+/* make running thread sleep */
+void 
+thread_sleep (int64_t wakeup_ticks) {
+	struct thread *curr = thread_current ();
+	enum intr_level old_level;
+
+	// interrupt가 없을 때만 실행
+	ASSERT (!intr_context ());
+	old_level = intr_disable ();
+	if (curr != idle_thread) {
+		curr->wakeup_tick = wakeup_ticks;
+		min_wakeup_ticks = (min_wakeup_ticks < curr->wakeup_tick)? min_wakeup_ticks : curr->wakeup_tick;
+		list_push_back (&sleep_list, &curr->elem);
+	}
+	do_schedule (THREAD_BLOCKED);
+	intr_set_level (old_level);
+};
+
+/* awake sleeping thread */
+void 
+thread_awake(void) {
+	struct list_elem *sleep_head = list_begin (&sleep_list);
+	int64_t cur_min_tick = INT64_MAX;
+	int64_t end = timer_ticks ();
+	if (min_wakeup_ticks <= end) {
+		struct list_elem *e = sleep_head;
+		while (e != list_end(&sleep_list)) {
+			struct thread *candidate = list_entry (e, struct thread, elem);
+			if (candidate->wakeup_tick <= end) {
+				e = list_remove(e);
+				thread_unblock(candidate);
+			}
+			else {
+				cur_min_tick = (cur_min_tick < candidate->wakeup_tick)? cur_min_tick : candidate->wakeup_tick;
+				e = list_next(e);
+			}
+		}
+	min_wakeup_ticks = cur_min_tick;	
+	}
+};
+
 
 /* Switching the thread by activating the new thread's page
    tables, and, if the previous thread is dying, destroying it.
