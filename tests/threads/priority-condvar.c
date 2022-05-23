@@ -39,6 +39,11 @@ test_priority_condvar (void)
       msg ("Signaling...");
       cond_signal (&condition, &lock);
       lock_release (&lock);
+      struct list_elem *e = list_begin(&condition.waiters);
+      while (e != list_end(&condition.waiters)) {
+        printf("waiter cond priority? %d\n", list_entry(e, struct thread, elem)->priority);
+        e = list_next(e);
+      }
     }
 }
 
@@ -48,6 +53,12 @@ priority_condvar_thread (void *aux UNUSED)
   msg ("Thread %s starting.", thread_name ());
   lock_acquire (&lock);
   cond_wait (&condition, &lock);
+
   msg ("Thread %s woke up.", thread_name ());
   lock_release (&lock);
+  struct list_elem *e = list_begin(&condition.waiters);
+  while (e != list_end(&condition.waiters)) {
+    printf("inserted priority? %d\n", list_entry(e, struct thread, elem)->priority);
+    e = list_next(e);
+  }
 }

@@ -1,12 +1,165 @@
 FAIL
-Kernel panic in run: PANIC at ../../lib/kernel/list.c:270 in list_front(): assertion `!list_empty (list)' failed.
-Call stack: 0x80042139a4 0x8004214356 0x8004214290 0x8004209cc3 0x800420a21a 0x8004207c08 0x80042069b2 0x8004206070
-Translation of call stack:
-0x00000080042139a4: debug_panic (lib/kernel/debug.c:32)
-0x0000008004214356: list_front (lib/kernel/list.c:271)
-0x0000008004214290: list_pop_front (lib/kernel/list.c:252)
-0x0000008004209cc3: sema_up (threads/synch.c:113)
-0x000000800420a21a: lock_release (threads/synch.c:233)
-0x0000008004207c08: allocate_tid (threads/thread.c:666)
-0x00000080042069b2: thread_init (threads/thread.c:127)
-0x0000008004206070: main (threads/init.c:83)
+Test output failed to match any acceptable form.
+
+Acceptable output:
+  (priority-condvar) begin
+  (priority-condvar) Thread priority 23 starting.
+  (priority-condvar) Thread priority 22 starting.
+  (priority-condvar) Thread priority 21 starting.
+  (priority-condvar) Thread priority 30 starting.
+  (priority-condvar) Thread priority 29 starting.
+  (priority-condvar) Thread priority 28 starting.
+  (priority-condvar) Thread priority 27 starting.
+  (priority-condvar) Thread priority 26 starting.
+  (priority-condvar) Thread priority 25 starting.
+  (priority-condvar) Thread priority 24 starting.
+  (priority-condvar) Signaling...
+  (priority-condvar) Thread priority 30 woke up.
+  (priority-condvar) Signaling...
+  (priority-condvar) Thread priority 29 woke up.
+  (priority-condvar) Signaling...
+  (priority-condvar) Thread priority 28 woke up.
+  (priority-condvar) Signaling...
+  (priority-condvar) Thread priority 27 woke up.
+  (priority-condvar) Signaling...
+  (priority-condvar) Thread priority 26 woke up.
+  (priority-condvar) Signaling...
+  (priority-condvar) Thread priority 25 woke up.
+  (priority-condvar) Signaling...
+  (priority-condvar) Thread priority 24 woke up.
+  (priority-condvar) Signaling...
+  (priority-condvar) Thread priority 23 woke up.
+  (priority-condvar) Signaling...
+  (priority-condvar) Thread priority 22 woke up.
+  (priority-condvar) Signaling...
+  (priority-condvar) Thread priority 21 woke up.
+  (priority-condvar) end
+Differences in `diff -u' format:
+  (priority-condvar) begin
+  (priority-condvar) Thread priority 23 starting.
+  (priority-condvar) Thread priority 22 starting.
+  (priority-condvar) Thread priority 21 starting.
+  (priority-condvar) Thread priority 30 starting.
+  (priority-condvar) Thread priority 29 starting.
+  (priority-condvar) Thread priority 28 starting.
+  (priority-condvar) Thread priority 27 starting.
+  (priority-condvar) Thread priority 26 starting.
+  (priority-condvar) Thread priority 25 starting.
+  (priority-condvar) Thread priority 24 starting.
+  (priority-condvar) Signaling...
++ (priority-condvar) Thread priority 23 woke up.
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ (priority-condvar) Signaling...
++ (priority-condvar) Thread priority 22 woke up.
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ (priority-condvar) Signaling...
++ (priority-condvar) Thread priority 21 woke up.
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ (priority-condvar) Signaling...
+  (priority-condvar) Thread priority 30 woke up.
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
+  (priority-condvar) Signaling...
+  (priority-condvar) Thread priority 29 woke up.
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
+  (priority-condvar) Signaling...
+  (priority-condvar) Thread priority 28 woke up.
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
+  (priority-condvar) Signaling...
+  (priority-condvar) Thread priority 27 woke up.
++ inserted priority? 69350784
++ inserted priority? 69350784
++ inserted priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
+  (priority-condvar) Signaling...
+  (priority-condvar) Thread priority 26 woke up.
++ inserted priority? 69350784
++ inserted priority? 69350784
++ waiter cond priority? 69350784
++ waiter cond priority? 69350784
+  (priority-condvar) Signaling...
+  (priority-condvar) Thread priority 25 woke up.
++ inserted priority? 69350784
++ waiter cond priority? 69350784
+  (priority-condvar) Signaling...
+  (priority-condvar) Thread priority 24 woke up.
+- (priority-condvar) Signaling...
+- (priority-condvar) Thread priority 23 woke up.
+- (priority-condvar) Signaling...
+- (priority-condvar) Thread priority 22 woke up.
+- (priority-condvar) Signaling...
+- (priority-condvar) Thread priority 21 woke up.
+  (priority-condvar) end
