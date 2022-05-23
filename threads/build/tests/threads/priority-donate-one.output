@@ -1,4 +1,4 @@
-Kernel command line: -q run priority-change
+Kernel command line: -q run priority-donate-one
 0 ~ 9fc00 1
 100000 ~ 13e0000 1
 Pintos booting with: 
@@ -6,8 +6,8 @@ Pintos booting with:
 	ext_mem: 0x100000 ~ 0x13e0000 (Usable: 19,328 kB)
 Calibrating timer...  157,081,600 loops/s.
 Boot complete.
-Executing 'priority-change':
-Kernel PANIC at ../../tests/threads/tests.c:60 in run_test(): no test named "priority-change"
+Executing 'priority-donate-one':
+Kernel PANIC at ../../tests/threads/tests.c:60 in run_test(): no test named "priority-donate-one"
 Call stack: 0x80042135f6 0x8004216aa4 0x8004206636 0x8004206783 0x8004206120.
 The `backtrace' program can make call stacks useful.
 Read "Backtraces" in the "Debugging Tools" chapter

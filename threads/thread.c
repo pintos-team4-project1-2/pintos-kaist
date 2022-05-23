@@ -187,9 +187,9 @@ thread_print_stats (void) {
    PRIORITY, but no actual priority scheduling is implemented.
    Priority scheduling is the goal of Problem 1-3. */
 tid_t
-thread_create (const char *name, int priority,
+thread_create (const char *name, int created_priority,
 		thread_func *function, void *aux) {
-	struct thread *t, *curr;
+	struct thread *t;
 	tid_t tid;
 
 	ASSERT (function != NULL);
@@ -199,7 +199,7 @@ thread_create (const char *name, int priority,
 		return TID_ERROR;
 
 	/* Initialize thread. */
-	init_thread (t, name, priority);
+	init_thread (t, name, created_priority);
 	tid = t->tid = allocate_tid ();
 
 	/* Call the kernel_thread if it scheduled.
@@ -216,8 +216,7 @@ thread_create (const char *name, int priority,
 	/* Add to run queue. */
 	thread_unblock (t);
 
-	curr = thread_current ();
-	if (curr->priority < priority)
+	if (thread_current ()->priority < created_priority)
 		thread_yield();
 
 	return tid;
@@ -253,7 +252,7 @@ thread_unblock (struct thread *t) {
 
 	old_level = intr_disable ();
 	ASSERT (t->status == THREAD_BLOCKED);
-	list_insert_ordered (&ready_list, &t->elem, &cmp_priority, NULL);
+	list_insert_ordered (&ready_list, &t->elem, cmp_priority, NULL);
 	t->status = THREAD_READY;
 	intr_set_level (old_level);
 }
@@ -317,7 +316,7 @@ thread_yield (void) {
 
 	old_level = intr_disable ();
 	if (curr != idle_thread)
-		list_insert_ordered (&ready_list, &curr->elem, &cmp_priority, NULL);
+		list_insert_ordered (&ready_list, &curr->elem, cmp_priority, NULL);
 	do_schedule (THREAD_READY);
 	intr_set_level (old_level);
 }
@@ -347,7 +346,6 @@ cmp_priority (const struct list_elem *a_, const struct list_elem *b_, void *aux 
 
 	return thread_a->priority > thread_b->priority ? 1 : 0;
 }
-
 
 /* Returns the current thread's priority. */
 int
@@ -493,7 +491,6 @@ thread_sleep (int64_t wakeup_ticks) {
 	struct thread *curr = thread_current ();
 	enum intr_level old_level;
 
-	// interrupt가 없을 때만 실행
 	ASSERT (!intr_context ());
 	old_level = intr_disable ();
 	if (curr != idle_thread) {
@@ -507,10 +504,9 @@ thread_sleep (int64_t wakeup_ticks) {
 
 /* awake sleeping thread */
 void 
-thread_awake(void) {
+thread_awake(int64_t end) {
 	struct list_elem *sleep_head = list_begin (&sleep_list);
 	int64_t cur_min_tick = INT64_MAX;
-	int64_t end = timer_ticks ();
 	if (min_wakeup_ticks <= end) {
 		struct list_elem *e = sleep_head;
 		while (e != list_end(&sleep_list)) {
