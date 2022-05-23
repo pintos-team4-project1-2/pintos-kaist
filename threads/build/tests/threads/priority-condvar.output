@@ -1,11 +1,4 @@
-c[?7l[2J[0mSeaBIOS (version 1.13.0-1ubuntu1.1)
-
-
-iPXE (http://ipxe.org) 00:03.0 CA00 PCI2.10 PnP PMM+0138CA10+012CCA10 CA00
-Press Ctrl-B to configure iPXE (PCI 00:03.0)...                                                                               
-
-
-Booting from Hard Disk..Kernel command line: -q run priority-condvar
+Kernel command line: -q run priority-condvar
 0 ~ 9fc00 1
 100000 ~ 13e0000 1
 Pintos booting with: 
@@ -14,11 +7,41 @@ Pintos booting with:
 Calibrating timer...  157,081,600 loops/s.
 Boot complete.
 Executing 'priority-condvar':
-Kernel PANIC at ../../tests/threads/tests.c:60 in run_test(): no test named "priority-condvar"
-Call stack: 0x80042136e2 0x8004216b94 0x8004206644 0x8004206795 0x8004206128.
-The `backtrace' program can make call stacks useful.
-Read "Backtraces" in the "Debugging Tools" chapter
-of the Pintos documentation for more information.
-Timer: 23 ticks
-Thread: 0 idle ticks, 23 kernel ticks, 0 user ticks
-Console: 
+(priority-condvar) begin
+(priority-condvar) Thread priority 23 starting.
+(priority-condvar) Thread priority 22 starting.
+(priority-condvar) Thread priority 21 starting.
+(priority-condvar) Thread priority 30 starting.
+(priority-condvar) Thread priority 29 starting.
+(priority-condvar) Thread priority 28 starting.
+(priority-condvar) Thread priority 27 starting.
+(priority-condvar) Thread priority 26 starting.
+(priority-condvar) Thread priority 25 starting.
+(priority-condvar) Thread priority 24 starting.
+(priority-condvar) Signaling...
+(priority-condvar) Thread priority 30 woke up.
+(priority-condvar) Signaling...
+(priority-condvar) Thread priority 29 woke up.
+(priority-condvar) Signaling...
+(priority-condvar) Thread priority 28 woke up.
+(priority-condvar) Signaling...
+(priority-condvar) Thread priority 27 woke up.
+(priority-condvar) Signaling...
+(priority-condvar) Thread priority 26 woke up.
+(priority-condvar) Signaling...
+(priority-condvar) Thread priority 25 woke up.
+(priority-condvar) Signaling...
+(priority-condvar) Thread priority 24 woke up.
+(priority-condvar) Signaling...
+(priority-condvar) Thread priority 23 woke up.
+(priority-condvar) Signaling...
+(priority-condvar) Thread priority 22 woke up.
+(priority-condvar) Signaling...
+(priority-condvar) Thread priority 21 woke up.
+(priority-condvar) end
+Execution of 'priority-condvar' complete.
+Timer: 31 ticks
+Thread: 0 idle ticks, 31 kernel ticks, 0 user ticks
+Console: 1707 characters output
+Keyboard: 0 keys pressed
+Powering off...
