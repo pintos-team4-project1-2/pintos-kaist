@@ -91,7 +91,7 @@ struct  thread {
 	enum thread_status status;          /* Thread state. */
 	char name[16];                      /* Name (for debugging purposes). */
 	int priority;                       /* Priority. */
-
+	
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
 
@@ -109,6 +109,11 @@ struct  thread {
 	unsigned magic;                     /* Detects stack overflow. */
 
 	int64_t wakeup_tick; 					/* what tick to wake up */
+
+	int origin_priority;
+	struct lock *wait_on_lock;
+	struct list donations;
+	struct list_elem d_elem;
 };
 
 /* If false (default), use round-robin scheduler.
@@ -151,5 +156,9 @@ void thread_awake (int64_t ticks);
 void test_max_priority (void);
 
 bool cmp_priority (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
+
+void donate_priority (void);
+void remove_with_lock (struct lock *lock);
+void refresh_priority (void);
 
 #endif /* threads/thread.h */
