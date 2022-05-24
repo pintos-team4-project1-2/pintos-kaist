@@ -325,11 +325,14 @@ thread_yield (void) {
 void
 thread_set_priority (int new_priority) {
 	// struct thread *first_ready_t = list_entry(list_begin(&ready_list), struct thread, elem);
-
-	thread_current ()->origin_priority = new_priority;
-	thread_current ()->priority = new_priority;
-	refresh_priority ();
-	donate_priority ();
+	struct thread *curr = thread_current ();
+	curr->origin_priority = new_priority;
+	curr->priority = new_priority;
+	
+	if (!list_empty(&curr->donations)) {
+		refresh_priority ();
+		donate_priority ();
+	}
 	// if (new_priority < first_ready_t->priority){
 	// 	thread_yield();
 	// }
@@ -350,6 +353,14 @@ bool
 cmp_priority (const struct list_elem *a_, const struct list_elem *b_, void *aux UNUSED) {
 	struct thread *thread_a = list_entry(a_, struct thread, elem);
 	struct thread *thread_b = list_entry(b_, struct thread, elem);
+
+	return thread_a->priority > thread_b->priority ? 1 : 0;
+}
+
+bool
+cmp_donate_priority (const struct list_elem *a_, const struct list_elem *b_, void *aux UNUSED) {
+	struct thread *thread_a = list_entry(a_, struct thread, d_elem);
+	struct thread *thread_b = list_entry(b_, struct thread, d_elem);
 
 	return thread_a->priority > thread_b->priority ? 1 : 0;
 }
@@ -673,29 +684,41 @@ thread_awake(int64_t ticks) {
 
 void
 donate_priority (void){
-	struct thread *curr = thread_current();
+	struct thread *curr = thread_current ();
 	struct thread *holder_thread = curr->wait_on_lock->holder;
+	int DEPTHS = 8;
+	// printf("donate_priority call\n");
+	// list_insert_ordered (&holder_thread->donations, &curr->d_elem, cmp_donate_priority, NULL);
+	if (holder_thread != NULL) {
+		list_push_back (&holder_thread->donations, &curr->d_elem);
+		// printf("do 1\n");
+		while ((holder_thread->wait_on_lock != NULL) && (DEPTHS > 0)) {
 
-	list_insert_ordered (&holder_thread->donations, &curr->d_elem, cmp_priority, NULL);
+			holder_thread->priority = curr->priority;
+			// printf("do 2\n");
+			holder_thread = holder_thread->wait_on_lock->holder;
+			// printf("do 3\n");
+			DEPTHS--;
+		}
+		holder_thread->priority = curr->priority;
+		// printf("do finish\n");
+	}
 	// list_insert (&holder_thread->donations->tail, &curr->d_elem);
 	
 	// insert elem to all the chain
-	while (holder_thread->wait_on_lock != NULL){
-		holder_thread->priority = curr->priority;
-		holder_thread = holder_thread->wait_on_lock->holder;
-	}
-	holder_thread->priority = curr->priority;
+
 	// list_push_back(holder_thread->donations, &curr->d_elem);
 }
 
 // renew current thread's donations
 void
 remove_with_lock (struct lock *lock) {
-	struct thread *holder_thread = lock->holder;
-	struct list_elem *e = list_begin(&holder_thread->donations);
-
-	while (e != list_end(&holder_thread->donations)) {
-		if (list_entry(e, struct thread, elem)->wait_on_lock == lock) {
+	// struct thread *holder_thread = lock->holder;
+	struct thread *curr = thread_current ();
+	struct list_elem *e = list_begin (&curr->donations);
+	// printf("remove_with_lock call\n");
+	while (e != list_end(&curr->donations)) {
+		if (list_entry(e, struct thread, d_elem)->wait_on_lock == lock) {
 			e = list_remove(e);
 		}
 		else {
@@ -707,9 +730,13 @@ remove_with_lock (struct lock *lock) {
 
 void refresh_priority (void) {
 	struct thread *curr = thread_current ();
-
+	// printf("refresh_priority call\n");
 	curr->priority = curr->origin_priority;
-	if (cmp_priority(list_begin(&curr->donations), &curr->elem, NULL)) {
-		curr->priority = list_entry(list_begin(&curr->donations), struct thread, elem)->priority;
+	if (!list_empty(&curr->donations)) {
+		if (cmp_donate_priority(list_begin(&curr->donations), &curr->d_elem, NULL)) {
+			curr->priority = list_entry(list_begin(&curr->donations), struct thread, d_elem)->priority;
+		}
 	}
+
+	// printf("curr priority %d\n", curr->priority);
 }

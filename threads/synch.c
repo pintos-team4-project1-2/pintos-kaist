@@ -194,20 +194,25 @@ lock_acquire (struct lock *lock) {
 	ASSERT (lock != NULL);
 	ASSERT (!intr_context ());
 	ASSERT (!lock_held_by_current_thread (lock));
-
+	// printf("la 1\n");
 	if(lock->holder != NULL) {
 		struct thread *curr = thread_current ();
 		
 		// multiple donation
 		list_push_back (&lock->holder->donations, &curr->d_elem);
+		// printf("la 2\n");
 		// save addr of lock
 		curr->wait_on_lock = lock;
+		// printf("la 3\n");
 		donate_priority ();
+		// printf("la 4\n");
 	}
+	
 	sema_down (&lock->semaphore);
-
+	// printf("la 5\n");
 	// curr thread acquires lock
 	thread_current ()->wait_on_lock = NULL;
+	// printf("la 6\n");
 	lock->holder = thread_current ();
 }
 
@@ -241,9 +246,9 @@ lock_release (struct lock *lock) {
 	ASSERT (lock != NULL);
 	ASSERT (lock_held_by_current_thread (lock));
 
-	remove_with_lock (lock);
-	lock->holder = NULL;
 	
+	lock->holder = NULL;
+	remove_with_lock (lock);
 	refresh_priority ();
 	sema_up (&lock->semaphore);
 }
