@@ -9,6 +9,10 @@
 #include "vm/vm.h"
 #endif
 
+#define NICE_DEFAULT 0
+#define RECENT_CPU_DEFAULT 0
+#define LOAD_AVG_DEFAULT 0
+
 
 /* States in a thread's life cycle. */
 enum thread_status {
@@ -114,6 +118,9 @@ struct  thread {
 	struct lock *wait_on_lock;
 	struct list donations;
 	struct list_elem d_elem;
+
+	int nice;
+	int recent_cpu;
 };
 
 /* If false (default), use round-robin scheduler.
@@ -160,5 +167,11 @@ bool cmp_priority (const struct list_elem *a, const struct list_elem *b, void *a
 void donate_priority (void);
 void remove_with_lock (struct lock *lock);
 void refresh_priority (void);
+
+void mlfqs_priority (struct thread *t);
+void mlfqs_recent_cpu (struct thread *t);
+void mlfqs_load_avg (void);
+void mlfqs_increment (void);
+void mlfqs_recalc (void);
 
 #endif /* threads/thread.h */
