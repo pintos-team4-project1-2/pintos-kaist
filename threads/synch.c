@@ -176,7 +176,6 @@ sema_test_helper (void *sema_) {
 void
 lock_init (struct lock *lock) {
 	ASSERT (lock != NULL);
-
 	lock->holder = NULL;
 	sema_init (&lock->semaphore, 1);
 }
@@ -191,22 +190,24 @@ lock_init (struct lock *lock) {
    we need to sleep. */
 void
 lock_acquire (struct lock *lock) {
+
 	ASSERT (lock != NULL);
 	ASSERT (!intr_context ());
 	ASSERT (!lock_held_by_current_thread (lock));
-
+	
 	if(lock->holder != NULL) {
 		struct thread *curr = thread_current ();
 		
 		curr->wait_on_lock = lock;
-		if (!thread_mlfqs) {
+		if(!thread_mlfqs) {
 			list_push_back (&lock->holder->donations, &curr->d_elem);
 			donate_priority ();
 		}
-	}
 	sema_down (&lock->semaphore);
 	thread_current ()->wait_on_lock = NULL;
 	lock->holder = thread_current ();
+	}
+	
 }
 
 /* Tries to acquires LOCK and returns true if successful or false

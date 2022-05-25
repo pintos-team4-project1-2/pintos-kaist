@@ -1,0 +1,11 @@
+Kernel command line: -q run alarm-priority
+Kernel PANIC at ../../threads/synch.c:242 in lock_release(): assertion `lock_held_by_current_thread (lock)' failed.
+Call stack: 0x8004213fa2 0x800420aa32 0x8004207c86 0x8004206aeb 0x8004206068.
+The `backtrace' program can make call stacks useful.
+Read "Backtraces" in the "Debugging Tools" chapter
+of the Pintos documentation for more information.
+Timer: 0 ticks
+Thread: 0 idle ticks, 0 kernel ticks, 0 user ticks
+Console: 457 characters output
+Keyboard: 0 keys pressed
+Powering off...
