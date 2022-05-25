@@ -203,10 +203,10 @@ lock_acquire (struct lock *lock) {
 			list_push_back (&lock->holder->donations, &curr->d_elem);
 			donate_priority ();
 		}
+	}
 	sema_down (&lock->semaphore);
 	thread_current ()->wait_on_lock = NULL;
 	lock->holder = thread_current ();
-	}
 	
 }
 

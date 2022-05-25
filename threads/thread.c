@@ -1,5 +1,4 @@
 #include "threads/thread.h"
-#include "threads/fixed_point.h"
 #include <debug.h>
 #include <stddef.h>
 #include <random.h>
@@ -17,6 +16,7 @@
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
+#include "threads/fixed_point.h"
 
 /* Random value for struct thread's `magic' member.
    Used to detect stack overflow.  See the big comment at the top
@@ -30,6 +30,8 @@
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
 static struct list ready_list;
+
+static struct list all_list;
 
 /* Lisf of processes in THREAD_BLOCK state */
 static struct list sleep_list;
@@ -373,6 +375,7 @@ thread_set_nice (int nice UNUSED) {
 	enum intr_level old_level;
 
 	old_level = intr_disable ();
+	
 	thread_current ()->nice = nice;
 	mlfqs_priority (thread_current ());
 	test_max_priority ();
@@ -396,7 +399,7 @@ thread_get_load_avg (void) {
 	enum intr_level old_level;
 
 	old_level = intr_disable ();
-	int new_load_avg = mult_mixed(load_avg, 100);
+	int new_load_avg = fp_to_int_round(mult_mixed(load_avg, 100));
 	intr_set_level (old_level);
 	return new_load_avg;
 }
@@ -407,7 +410,7 @@ thread_get_recent_cpu (void) {
 	enum intr_level old_level;
 
 	old_level = intr_disable ();
-	int new_recent_cpu = mult_mixed(thread_current ()->recent_cpu, 100);
+	int new_recent_cpu = fp_to_int_round(mult_mixed(thread_current ()->recent_cpu, 100));
 	intr_set_level (old_level);
 	return new_recent_cpu;
 }
@@ -739,7 +742,9 @@ refresh_priority (void) {
 void
 mlfqs_priority (struct thread *t) {
 	if (t != idle_thread) {
-		t->priority = fp_to_int(add_mixed((t->recent_cpu / 4), PRI_MAX - t->nice *2));
+		t->priority = fp_to_int(add_mixed((div_mixed(t->recent_cpu, -4)), PRI_MAX - t->nice *2));
+		t->priority = t->priority > PRI_MIN ? t->priority : PRI_MIN;
+		t->priority = t->priority < PRI_MAX ? t->priority : PRI_MAX;
 	}
 }
 
@@ -747,7 +752,7 @@ mlfqs_priority (struct thread *t) {
 void
 mlfqs_recent_cpu (struct thread *t) {
 	if (t != idle_thread) {
-		t->recent_cpu = add_mixed(mult_fp(div_fp((2 * load_avg), add_mixed((2 * load_avg), 1)), t->recent_cpu), t->nice);
+		t->recent_cpu = add_mixed(mult_fp(div_fp((mult_mixed(load_avg, 2)), add_mixed(mult_mixed(load_avg, 2), 1)), t->recent_cpu), t->nice);
 	}
 }
 
@@ -763,7 +768,7 @@ mlfqs_load_avg (void) {
 		possible_thread_count = list_size (&ready_list);
 	}
 
-	load_avg = add_fp(mult_fp(div_fp(int_to_fp(59), int_to_fp(60)), load_avg), mult_mixed(div_fp(int_to_fp(1), int_to_fp(60)), possible_thread_count));
+	load_avg = div_mixed(add_mixed(mult_mixed(load_avg, 59), possible_thread_count), 60);
 }
 
 
