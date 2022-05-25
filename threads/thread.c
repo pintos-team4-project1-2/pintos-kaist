@@ -38,6 +38,9 @@ static struct list ready_list;
 /* Lisf of processes in THREAD_BLOCK state */
 static struct list sleep_list;
 
+/* List of processes in THREAD_READY and THREAD_BLOCK state */
+static struct list all_list;
+
 /* Idle thread. */
 static struct thread *idle_thread;
 
@@ -125,6 +128,7 @@ thread_init (void) {
 	list_init (&ready_list);
 	list_init(&sleep_list);
 	list_init (&destruction_req);
+	list_init (&all_list);
 
 	/* Set up a thread structure for the running thread. */
 	initial_thread = running_thread ();
@@ -220,6 +224,9 @@ thread_create (const char *name, int priority,
 	t->tf.cs = SEL_KCSEG;
 	t->tf.eflags = FLAG_IF;
 	
+	/* Add t to all_list */
+	list_push_back(&all_list, &t->a_elem);
+
 	/* Add to run queue. */
 	thread_unblock (t);
 
@@ -307,6 +314,8 @@ thread_exit (void) {
 	/* Just set our status to dying and schedule another process.
 	   We will be destroyed during the call to schedule_tail(). */
 	intr_disable ();
+
+	list_remove(&thread_current ()->a_elem);
 	do_schedule (THREAD_DYING);
 	NOT_REACHED ();
 }
@@ -410,7 +419,7 @@ thread_get_load_avg (void) {
 	ASSERT (!intr_context ());
 
 	old_level = intr_disable ();
-	curr_load_avg = 100 * load_avg;
+	curr_load_avg = fp_to_int_round(mul_mixed(load_avg, 100));
 	intr_set_level (old_level);	
 	return curr_load_avg;
 }
@@ -758,6 +767,8 @@ mlfqs_priority (struct thread *t) {
 	if (t != idle_thread) {
 		/* priority = PRI_MAX – (recent_cpu / 4) – (nice * 2) */
 		t->priority = fp_to_int(sub_mixed(sub_mixed(PRI_MAX, div_mixed(t->recent_cpu, 4)), mul_mixed(t->nice, 2)));
+		t->priority = t->priority > PRI_MIN ? t->priority : PRI_MIN;
+		t->priority = t->priority < PRI_MAX ? t->priority : PRI_MAX;
 	}
 }
 
@@ -765,16 +776,16 @@ void
 mlfqs_recent_cpu (struct thread *t) {
 	if (t != idle_thread) {
 		/* recent_cpu = (2 * load_avg) / (2 * load_avg + 1) * recent_cpu + nice */
-		int recent_cpu_delta = div_mixed(mul_mixed(t->recent_cpu, 2*load_avg), 2*load_avg+1);
+		int twice_avg = mul_mixed(load_avg, 2);
+		int recent_cpu_delta = div_mixed(mul_mixed(t->recent_cpu, twice_avg), add_mixed(twice_avg, 1));
 		t->recent_cpu = add_fp(recent_cpu_delta, t->nice);
 	}
 }
 
 void
 mlfqs_load_avg (void) {
-	int ready_threads = list_size(&ready_list);
 	/* load_avg = (59/60) * load_avg + (1/60) * ready_threads */
-	load_avg = (59/60) * load_avg + (1/60) * list_size(&ready_list);
+	load_avg = div_mixed(add_mixed(mul_mixed(load_avg, 59), list_size(&ready_list)), 60);
 }
 
 void
@@ -792,8 +803,8 @@ mlfqs_recalc (void) {
 	mlfqs_recent_cpu(curr);
 	mlfqs_priority(curr);
 
-	for (struct list_elem *e = list_begin(&ready_list); e != list_end(&ready_list); e = list_next(e)) {
-		struct thread *t = list_entry(e, struct thread, elem);
+	for (struct list_elem *e = list_begin(&all_list); e != list_end(&all_list); e = list_next(e)) {
+		struct thread *t = list_entry(e, struct thread, a_elem);
 		mlfqs_recent_cpu(t);
 		mlfqs_priority(t);
 	}
