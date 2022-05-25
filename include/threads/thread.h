@@ -118,7 +118,7 @@ struct  thread {
 	int nice;
 	int recent_cpu;
 
-	struct list_elem a_elem;
+	// struct list_elem a_elem;
 };
 
 /* If false (default), use round-robin scheduler.

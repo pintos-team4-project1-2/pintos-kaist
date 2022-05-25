@@ -130,7 +130,6 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED) {
 	ticks++;
 	thread_tick ();
-	thread_awake (ticks);
 
 	if (thread_mlfqs) {
 		mlfqs_increment ();
@@ -142,6 +141,7 @@ timer_interrupt (struct intr_frame *args UNUSED) {
 			mlfqs_priority (thread_current ());
 		}
 	}
+	thread_awake (ticks);
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
