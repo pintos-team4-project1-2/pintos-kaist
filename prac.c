@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
-char s[] = "$bin/ls –l foo bar";
+char s[] = "$bin/ls -l foo bar";
 
 int main(void) {
     char *token, *save_ptr;
@@ -10,20 +10,19 @@ int main(void) {
     // token = strtok_r (s, " ", &save_ptr);
     // printf("%s\n", token);
     // printf("%s\n", save_ptr);
-    printf("%ld\n",sizeof(token));
+    char *arr[128];
+    int i = 0, argc = 0;
     for (token = strtok_r (s, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr)) {
+        arr[argc++] = token;
         printf("'%s'\n", token);
         // printf("'%ld\n", strlen(token));
         // printf("%p\n", &(*token));
     }
-    char *token2, *save_ptr2;
-    
-    // token = strtok_r (s, " ", &save_ptr);
-    // printf("%s\n", token);
-    // printf("%s\n", save_ptr);
-    for (token2 = strtok_r (s, " ", &save_ptr2); token2 != NULL; token2 = strtok_r (NULL, " ", &save_ptr2)) {
-        printf("'%s'\n", token2);
-        // printf("'%ld\n", strlen(token2));
-        // printf("%p\n", &(*token2));
+
+    for (i = argc-1; i >= 0; i--) {
+        // printf("%s\n", arr[i]);
+        printf("1 %p\n", arr[i]);
+        // printf("%li\n", strlen(arr[i])+1);
+        printf("2 %p\n", arr[i]-sizeof(void *));
     }
 }

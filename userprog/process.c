@@ -45,6 +45,7 @@ process_create_initd (const char *file_name) {
 	char *fn_copy;
 	tid_t tid;
 
+	printf("precess_create_initd, %s\n", file_name);
 	/* Make a copy of FILE_NAME.
 	 * Otherwise there's a race between the caller and load(). */
 	fn_copy = palloc_get_page (0);
@@ -185,8 +186,6 @@ process_exec (void *f_name) {
 
 	/* We first kill the current context */
 	process_cleanup ();
-
-
 
 	/* And then load the binary */
 	success = load (f_name, &_if);
@@ -343,6 +342,7 @@ load (const char *file_name, struct intr_frame *if_) {
 	bool success = false;
 	int i;
 
+	printf("precess_create_initd, %s\n", file_name);
 	/* Allocate and activate page directory. */
 	t->pml4 = pml4_create ();
 	if (t->pml4 == NULL)
@@ -430,50 +430,45 @@ load (const char *file_name, struct intr_frame *if_) {
 
 	/* TODO: Your code goes here.
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
-	
 
-	
+	// char *fn_copy;
+	// fn_copy = strlcpy (fn_copy, file_name, PGSIZE);
 
-	// char s[] = "string  to tokenize";
-	char *fn_copy;
-	fn_copy = strlcpy (fn_copy, file_name, PGSIZE);
+	// char *token, *save_ptr;
+	// char *arr[128];
+	// char *add_arr[128];
+	// int argc = 0;
+	// void *fake_addr;
 
-	char *token, *save_ptr;
-	int argc = 0;
-    for (token = strtok_r (fn_copy, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr))
-        // printf("'%s'\n", token);
-		argc++;
+    // for (token = strtok_r (fn_copy, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr))
+	// 	arr[argc++] = token;
 
-	if_->rsp = &argc;
-	if_->rsp += sizeof(argc);
-
-	// char *argv0, *option;
-	// argv0 = strtok_r (file_name, " ", &option);
-
-	void **argv = &file_name;
-
-	if_->rsp = &argv;
-	if_->rsp += sizeof(argv);
-
-
-	char *arg, *opt_ptr;
-	for (arg = strtok_r (file_name, " ", &opt_ptr); arg = NULL; arg = strtok_r (NULL, " ", &opt_ptr)) {
-		
-	}
-
-
-
-	// char *token, *arg_ptr;
-	// struct list *stack;
-	// for (token = strtok_r (file_name, " ", &arg_ptr); token = NULL; token = strtok_r (NULL, " ", &arg_ptr)) {
-	// 	list_push_back(&stack, token);
+	// for (int i = argc-1; i >= 0; i--) {
+	// 	if_->rsp -= (strlen(arr[i]) + 1);
+	// 	memcpy(if_->rsp, arr[i], (strlen(arr[i]) + 1));
+	// 	add_arr[i] = if_->rsp;
 	// }
 
-	// if_->R.rdi = &stack[0];
-	// if_->R.rsi = &stack[1];
+	// uint8_t word_algin = 0;
+	// if_->rsp -= sizeof(word_algin);
+	// memcpy(if_->rsp, word_algin, sizeof(word_algin));
 
+	// char *argv4 = '\0';
+	// if_->rsp -= sizeof(argv4);
+	// memcpy(if_->rsp, argv4, sizeof(argv4));
 
-	success = true;
+	// for (int i = argc-1; i >= 0; i--) {
+	// 	if_->rsp -= sizeof(add_arr[i]);
+	// 	memcpy(if_->rsp, add_arr[i], sizeof(add_arr[i]));
+	// }
+
+	// if_->R.rdi = argc;
+
+	// if_->rsp -= sizeof(fake_addr);
+	// memcpy(if_->rsp, fake_addr, sizeof(fake_addr));
+	// if_->R.rsi = if_->rsp + sizeof(fake_addr);
+
+	// success = true;
 
 done:
 	/* We arrive here whether the load is successful or not. */
