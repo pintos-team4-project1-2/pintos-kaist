@@ -39,6 +39,12 @@ static struct list sleep_list;
 /* Idle thread. */
 static struct thread *idle_thread;
 
+static struct kernel_thread_frame {
+	void *eip;
+	thread_func *function;
+	void *aux;
+};
+
 /* Initial thread, the thread running init.c:main(). */
 static struct thread *initial_thread;
 
@@ -196,10 +202,11 @@ tid_t
 thread_create (const char *name, int priority,
 		thread_func *function, void *aux) {
 	struct thread *t;
+	struct kernel_thread_frame *kf;
 	tid_t tid;
 
 	ASSERT (function != NULL);
-	/* Allocate thread. */
+	/* Allocate one page(4KB) to thread. */
 	t = palloc_get_page (PAL_ZERO);
 	if (t == NULL)
 		return TID_ERROR;
@@ -207,6 +214,8 @@ thread_create (const char *name, int priority,
 	/* Initialize thread. */
 	init_thread (t, name, priority);
 	tid = t->tid = allocate_tid ();
+	/* Stack frame for kernel_thread (). */
+	kf = alloc_frame (t, sizeof *kf);		/* allocate stack */
 
 	/* Call the kernel_thread if it scheduled.
 	 * Note) rdi is 1st argument, and rsi is 2nd argument. */
@@ -218,6 +227,10 @@ thread_create (const char *name, int priority,
 	t->tf.ss = SEL_KDSEG;
 	t->tf.cs = SEL_KCSEG;
 	t->tf.eflags = FLAG_IF;
+
+	kf->eip = NULL;
+	kf->function = function;			/* function to run */
+	kf->aux = aux;						/* parameters for the function to run */
 	
 	/* Add to run queue. */
 	thread_unblock (t);
@@ -474,6 +487,9 @@ init_thread (struct thread *t, const char *name, int priority) {
 	memset (t, 0, sizeof *t);
 	t->status = THREAD_BLOCKED;
 	strlcpy (t->name, name, sizeof t->name);
+	/* allocate 4KB(=PGSIZE) to thread t */
+	/* stack pointer points top of the PGSIZE */
+	/* ??? */
 	t->tf.rsp = (uint64_t) t + PGSIZE - sizeof (void *);
 	t->priority = priority;
 	t->origin_priority = priority;

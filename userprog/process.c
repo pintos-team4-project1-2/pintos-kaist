@@ -38,6 +38,8 @@ process_init (void) {
  * before process_create_initd() returns. Returns the initd's
  * thread id, or TID_ERROR if the thread cannot be created.
  * Notice that THIS SHOULD BE CALLED ONCE. */
+
+/* process_execute */
 tid_t
 process_create_initd (const char *file_name) {
 	char *fn_copy;
@@ -49,9 +51,15 @@ process_create_initd (const char *file_name) {
 	if (fn_copy == NULL)
 		return TID_ERROR;
 	strlcpy (fn_copy, file_name, PGSIZE);
+	
+	/* added 1 */
+	/* passing the argments to argment stack*/
 
 	/* Create a new thread to execute FILE_NAME. */
+	// tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
+
 	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
+
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy);
 	return tid;
@@ -160,6 +168,8 @@ error:
 
 /* Switch the current execution context to the f_name.
  * Returns -1 on fail. */
+
+/* start_process */
 int
 process_exec (void *f_name) {
 	char *file_name = f_name;
@@ -176,13 +186,17 @@ process_exec (void *f_name) {
 	/* We first kill the current context */
 	process_cleanup ();
 
+
+
 	/* And then load the binary */
-	success = load (file_name, &_if);
+	success = load (f_name, &_if);
 
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
 	if (!success)
 		return -1;
+
+	hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
 
 	/* Start switched process. */
 	do_iret (&_if);
@@ -416,6 +430,48 @@ load (const char *file_name, struct intr_frame *if_) {
 
 	/* TODO: Your code goes here.
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
+	
+
+	
+
+	// char s[] = "string  to tokenize";
+	char *fn_copy;
+	fn_copy = strlcpy (fn_copy, file_name, PGSIZE);
+
+	char *token, *save_ptr;
+	int argc = 0;
+    for (token = strtok_r (fn_copy, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr))
+        // printf("'%s'\n", token);
+		argc++;
+
+	if_->rsp = &argc;
+	if_->rsp += sizeof(argc);
+
+	// char *argv0, *option;
+	// argv0 = strtok_r (file_name, " ", &option);
+
+	void **argv = &file_name;
+
+	if_->rsp = &argv;
+	if_->rsp += sizeof(argv);
+
+
+	char *arg, *opt_ptr;
+	for (arg = strtok_r (file_name, " ", &opt_ptr); arg = NULL; arg = strtok_r (NULL, " ", &opt_ptr)) {
+		
+	}
+
+
+
+	// char *token, *arg_ptr;
+	// struct list *stack;
+	// for (token = strtok_r (file_name, " ", &arg_ptr); token = NULL; token = strtok_r (NULL, " ", &arg_ptr)) {
+	// 	list_push_back(&stack, token);
+	// }
+
+	// if_->R.rdi = &stack[0];
+	// if_->R.rsi = &stack[1];
+
 
 	success = true;
 
@@ -637,3 +693,12 @@ setup_stack (struct intr_frame *if_) {
 	return success;
 }
 #endif /* VM */
+
+
+// void argment_stack(char **parse,  void **rsp) {
+// 	int count = 0;
+// 	char *save_ptr;
+// 	for (char *token = strtok_r(parse, " ", &save_ptr); token != NULL; token = str(NULL, " ", &save_ptr)) {
+
+// 	}
+// }

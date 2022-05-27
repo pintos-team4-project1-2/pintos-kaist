@@ -45,20 +45,20 @@ struct intr_frame {
 	uint16_t __pad3;
 	uint32_t __pad4;
 	/* Pushed by intrNN_stub in intr-stubs.S. */
-	uint64_t vec_no; /* Interrupt vector number. */
+	uint64_t vec_no; 					/* Interrupt vector number. */
 /* Sometimes pushed by the CPU,
    otherwise for consistency pushed as 0 by intrNN_stub.
    The CPU puts it just under `eip', but we move it here. */
 	uint64_t error_code;
 /* Pushed by the CPU.
    These are the interrupted task's saved registers. */
-	uintptr_t rip;
-	uint16_t cs;
+	uintptr_t rip;						/* Next instruction to execute */
+	uint16_t cs;						/* Code segment for rip */
 	uint16_t __pad5;
 	uint32_t __pad6;
-	uint64_t eflags;
-	uintptr_t rsp;
-	uint16_t ss;
+	uint64_t eflags;					/* Saved CPU falgs */
+	uintptr_t rsp;						/* Saved stack pointer */
+	uint16_t ss;						/* Data segment for rsp */
 	uint16_t __pad7;
 	uint32_t __pad8;
 } __attribute__((packed));
