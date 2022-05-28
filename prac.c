@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 
 char s[] = "$bin/ls -l foo bar";
 
@@ -36,6 +37,10 @@ int main(void) {
         printf("'%p'\n", *token);
         printf("'%p'\n", token);
     }
+    printf("%d\n", sizeof(uint8_t));
+    printf("%d\n", sizeof(char **));
+    printf("%d\n", sizeof(void(*) ()));
+
 
 
 }

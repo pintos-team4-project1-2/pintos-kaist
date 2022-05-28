@@ -188,7 +188,7 @@ process_exec (void *f_name) {
 
 	argument_stack(&arg, count, &_if);
 	hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
-	
+
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
 	if (!success)
@@ -665,14 +665,14 @@ argument_stack(char **arg, int count, struct intr_frame *if_) {
 
 	if_->rsp &= ~7;
 
-	if_->rsp -= sizeof(uint8_t);
+	if_->rsp -= 8;
 	memset(if_->rsp, 0, sizeof(uint8_t));
 
-	if_->rsp -= sizeof(char *);
+	if_->rsp -= 8;
 	memset(if_->rsp, 0, sizeof(char *));
 
 	for (i = count-1; i > -1; i--) {
-		if_->rsp -= sizeof(char *);
+		if_->rsp -= 8;
 		memcpy (if_->rsp, &arg[i], sizeof(char *));
 	}
 	
@@ -680,6 +680,6 @@ argument_stack(char **arg, int count, struct intr_frame *if_) {
 	if_->R.rsi = if_->rsp;
 
 	/* return address */
-	if_->rsp -= sizeof(void(*) ());
+	if_->rsp -= 8;
 	memset(if_->rsp, 0, sizeof(void(*) ()));
 }
