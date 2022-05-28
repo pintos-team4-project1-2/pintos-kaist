@@ -187,7 +187,7 @@ process_exec (void *f_name) {
 	success = load (arg[0], &_if);
 
 	argument_stack(&arg, count, &_if);
-	// hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
+	hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
 
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
@@ -689,10 +689,7 @@ argument_stack(char **arg, int count, struct intr_frame *if_) {
 
 /* added */
 void check_address (void *addr) {
-	if (is_kernel_vaddr(addr))
-		exit(-1);
-	
-	if (pml4_get_page(NULL, addr) == NULL)
+	if (addr < 0x8048000 || addr > 0xc0000000)
 		exit(-1);
 }
 

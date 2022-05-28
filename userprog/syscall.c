@@ -7,9 +7,27 @@
 #include "userprog/gdt.h"
 #include "threads/flags.h"
 #include "intrinsic.h"
+#include "filesys/filesys.h"
+
+typedef int pid_t;
 
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
+void halt(void);
+void exit(int status);
+bool create (const char *file, unsigned initial_size);
+bool remove (const char *file);
+pid_t fork (const char *thread_name);
+int exec (const char *file);
+int wait (pid_t);
+int open (const char *file);
+int filesize (int fd);
+int read (int fd, void *buffer, unsigned length);
+int write (int fd, const void *buffer, unsigned length);
+void seek (int fd, unsigned position);
+unsigned tell (int fd);
+void close (int fd);
+
 
 /* System call.
  *
@@ -41,6 +59,87 @@ syscall_init (void) {
 void
 syscall_handler (struct intr_frame *f UNUSED) {
 	// TODO: Your implementation goes here.
-	printf ("system call!\n");
+	check_address(f->rsp);
+	uint64_t sys_num = f->R.rax;
+	uint64_t arg1 = f->R.rdi;
+	uint64_t arg2 = f->R.rsi;
+	uint64_t arg3 = f->R.rdx;
+	uint64_t arg4 = f->R.r10;
+	uint64_t arg5 = f->R.r8;
+	uint64_t arg6 = f->R.r9;
+
+	// printf ("system call!\n");
+	switch(sys_num){
+		case 0:
+			halt ();
+			break;
+		case 1:
+			exit (arg1);
+			break;
+		// case 2:
+		// 	fork (arg1);
+		// 	break;
+		// case 3:
+		// 	exec (arg1);
+		// 	break;
+		// case 4:
+		// 	wait (arg1);
+		// 	break;
+		case 5:
+			create (arg1, arg2);
+			break;
+		case 6:
+			remove (arg1);
+			break;
+		// case 7:
+		// 	open (arg1);
+		// 	break;
+		// case 8:
+		// 	file_size (arg1);
+		// 	break;
+		// case 9:
+		// 	read (arg1, arg2, arg3);
+		// 	break;
+		// case 10:
+		// 	write (arg1, arg2, arg3);
+		// 	break;
+		// case 11:
+		// 	seek (arg1, arg2);
+		// 	break;
+		// case 12:
+		// 	tell (arg1);
+		// 	break;
+		// case 13:
+		// 	close (arg1);
+		// 	break;
+	}
 	thread_exit ();
 }
+
+
+void halt(void) {
+	power_off ();
+}
+
+void exit(int status){
+	char *name_ptr = thread_current ()->name;
+	thread_exit ();
+
+	printf("%s:exit(%d)\n", name_ptr, status);
+	status = 0;
+}
+
+bool create (const char *file, unsigned initial_size){
+	bool success = filesys_create (file, (off_t) initial_size);
+	if (!success)
+		return false;
+	return true; 
+}
+
+bool remove (const char *file){
+	bool success = filesys_remove (file);
+	if (!success)
+		return false;
+	return true; 
+}
+
