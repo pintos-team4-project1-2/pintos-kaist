@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "thread.h": "c",
-        "fixed_point.h": "c"
+        "fixed_point.h": "c",
+        "filesys.h": "c"
     }
 }
