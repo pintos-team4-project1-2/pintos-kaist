@@ -16,13 +16,13 @@ int main(void) {
         arr[argc++] = token;
         printf("'%s'\n", token);
         // printf("'%ld\n", strlen(token));
-        // printf("%p\n", &(*token));
+        printf("%p\n", token);
     }
 
-    for (i = argc-1; i >= 0; i--) {
-        // printf("%s\n", arr[i]);
-        printf("1 %p\n", arr[i]);
-        // printf("%li\n", strlen(arr[i])+1);
-        printf("2 %p\n", arr[i]-sizeof(void *));
-    }
+    // for (i = argc-1; i >= 0; i--) {
+    //     // printf("%s\n", arr[i]);
+    //     printf("1 %p\n", arr[i]);
+    //     // printf("%li\n", strlen(arr[i])+1);
+    //     printf("2 %p\n", arr[i]-sizeof(void *));
+    // }
 }

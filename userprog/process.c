@@ -176,6 +176,7 @@ process_exec (void *f_name) {
 	/* We first kill the current context */
 	process_cleanup ();
 
+	printf("load_up %s\n", file_name);
 	/* And then load the binary */
 	success = load (file_name, &_if);
 
@@ -330,6 +331,7 @@ load (const char *file_name, struct intr_frame *if_) {
 	bool success = false;
 	int i;
 
+	printf("load_in %s\n", file_name);
 	/* Allocate and activate page directory. */
 	t->pml4 = pml4_create ();
 	if (t->pml4 == NULL)
@@ -425,6 +427,7 @@ load (const char *file_name, struct intr_frame *if_) {
 
 	for (token = strtok_r (file_name, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr)) {
 		arr[argc++] = token;
+		printf("%s\n", token);
 	}
 
 	for (i = argc-1; i > -1; i--) {
@@ -446,7 +449,7 @@ load (const char *file_name, struct intr_frame *if_) {
 	}
 	
 	if_->R.rdi = argc;
-	if_->R.rsi = if_->rsp;
+	if_->R.rsi = &if_->rsp;
 
 	/* return address */
 	if_->rsp -= sizeof(void(*) ());
