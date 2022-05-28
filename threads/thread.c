@@ -39,12 +39,6 @@ static struct list sleep_list;
 /* Idle thread. */
 static struct thread *idle_thread;
 
-static struct kernel_thread_frame {
-	void *eip;
-	thread_func *function;
-	void *aux;
-};
-
 /* Initial thread, the thread running init.c:main(). */
 static struct thread *initial_thread;
 
@@ -202,7 +196,6 @@ tid_t
 thread_create (const char *name, int priority,
 		thread_func *function, void *aux) {
 	struct thread *t;
-	struct kernel_thread_frame *kf;
 	tid_t tid;
 
 	ASSERT (function != NULL);
@@ -227,10 +220,6 @@ thread_create (const char *name, int priority,
 	t->tf.ss = SEL_KDSEG;
 	t->tf.cs = SEL_KCSEG;
 	t->tf.eflags = FLAG_IF;
-
-	// kf->rip = NULL;
-	// kf->function = function;			/* function to run */
-	// kf->aux = aux;						/* parameters for the function to run */
 	
 	/* Add to run queue. */
 	thread_unblock (t);
@@ -355,9 +344,11 @@ thread_set_priority (int new_priority) {
 }
 
 void
-test_max_priority (void) {	
-	if (cmp_priority (list_begin (&ready_list), &thread_current ()->elem, NULL)) 
-		thread_yield ();
+test_max_priority (void) {
+	if (!list_empty(&ready_list)) {
+		if (cmp_priority (list_begin (&ready_list), &thread_current ()->elem, NULL)) 
+			thread_yield ();
+	}
 }
 
 bool
@@ -750,7 +741,7 @@ refresh_priority (void) {
 	curr->priority = curr->origin_priority;
 	if (!list_empty (&curr->donations)) {
 		if (cmp_donate_priority (list_begin (&curr->donations), &curr->d_elem, NULL))
-			curr->priority = list_entry(list_begin (&curr->donations), struct thread, d_elem)->priority;
+			curr->priority = list_entry (list_begin (&curr->donations), struct thread, d_elem)->priority;
 	}
 }
 

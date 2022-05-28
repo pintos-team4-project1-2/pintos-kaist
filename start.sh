@@ -1,10 +1,10 @@
 #!/bin/bash
 
 source ./activate
-cd ./userprog/build
-
 make clean
+cd ./userprog
 make
+cd ./build
 # make
 # cd ./threads
 # make check
@@ -13,3 +13,4 @@ make
 # cd build
 # pintos -- -q   run priority-donate-one
 pintos --fs-disk=10 -p tests/userprog/args-single:args-single -- -q -f run 'args-single onearg'
+# pintos --fs-disk=10 -p tests/userprog/echo -- -q -f run 'echo x'

@@ -121,6 +121,7 @@ struct  thread {
 
 	int nice;
 	int recent_cpu;
+	struct list_elem allelem;
 };
 
 /* If false (default), use round-robin scheduler.

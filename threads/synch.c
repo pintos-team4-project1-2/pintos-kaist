@@ -116,11 +116,11 @@ sema_up (struct semaphore *sema) {
 		list_sort (&sema->waiters, cmp_priority, NULL);
 		thread_unblock (list_entry (list_pop_front (&sema->waiters), struct thread, elem));
 	}
-	sema->value++;	
-	intr_set_level (old_level);
+	sema->value++;
 	
+	intr_set_level (old_level);
 
-	test_max_priority ();	
+	test_max_priority ();
 }
 
 static void sema_test_helper (void *sema_);
