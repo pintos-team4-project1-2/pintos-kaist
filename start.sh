@@ -12,5 +12,5 @@ cd ./build
 # pintos -v -k -T 60 -m 20   -- -q   run alarm-priority
 # cd build
 # pintos -- -q   run priority-donate-one
-pintos --gdb --fs-disk=10 -p tests/userprog/args-single:args-single -- -q -f run 'args-single onearg'
+pintos --fs-disk=10 -p tests/userprog/args-single:args-single -- -q -f run 'args-single onearg'
 # pintos --fs-disk=10 -p tests/userprog/echo -- -q -f run 'echo x'
