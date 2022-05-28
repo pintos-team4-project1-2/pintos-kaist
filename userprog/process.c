@@ -656,11 +656,14 @@ setup_stack (struct intr_frame *if_) {
 static void 
 argument_stack(char **arg, int count, struct intr_frame *if_) {
 
+	
 	int i;
-
+	// printf("rsp arg addr %p\n", if_->rsp);
 	for (i = count-1; i > -1; i--) {
 		if_->rsp -= (strlen(arg[i])+1);
 		memcpy(if_->rsp, arg[i], strlen(arg[i])+1);
+		arg[i] = if_->rsp;
+		// printf("rsp arg addr %p %p %s\n", &arg[i], if_->rsp, if_->rsp);
 	}
 
 	if_->rsp &= ~7;
@@ -682,4 +685,14 @@ argument_stack(char **arg, int count, struct intr_frame *if_) {
 	/* return address */
 	if_->rsp -= 8;
 	memset(if_->rsp, 0, sizeof(void(*) ()));
+}
+
+/* added */
+void check_address (void *addr) {
+	if (addr < 0x8048000 || addr > 0xc0000000)
+		exit(-1);
+}
+
+void get_argument (void *rsp, int *arg, int count) {
+	
 }
