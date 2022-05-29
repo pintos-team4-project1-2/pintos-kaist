@@ -8,6 +8,7 @@
 #include "threads/flags.h"
 #include "intrinsic.h"
 #include "filesys/filesys.h"
+#include <console.h>
 
 typedef int pid_t;
 
@@ -123,10 +124,9 @@ void halt(void) {
 
 void exit(int status){
 	char *name_ptr = thread_current ()->name;
-	thread_exit ();
-
-	printf("%s:exit(%d)\n", name_ptr, status);
 	status = 0;
+	printf("%s: exit(%d)\n", name_ptr, status);
+	thread_exit ();
 }
 
 bool create (const char *file, unsigned initial_size){
@@ -143,3 +143,10 @@ bool remove (const char *file){
 	return true; 
 }
 
+int write (int fd, const void *buffer, unsigned length) {
+	if (fd == 1){
+		putbuf (buffer, length); 
+		return length;
+	}
+	return -1;
+}
