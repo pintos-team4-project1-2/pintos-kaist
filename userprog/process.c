@@ -431,6 +431,8 @@ load (const char *file_name, struct intr_frame *if_) {
 
 	/* TODO: Your code goes here.
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
+	
+	strlcpy(t->name, file_name, sizeof t->name);
 
 	success = true;
 
@@ -655,8 +657,6 @@ setup_stack (struct intr_frame *if_) {
 
 static void 
 argument_stack(char **arg, int count, struct intr_frame *if_) {
-
-	
 	int i;
 	// printf("rsp arg addr %p\n", if_->rsp);
 	for (i = count-1; i > -1; i--) {
@@ -694,8 +694,4 @@ void check_address (void *addr) {
 	
 	if (pml4_get_page(NULL, addr) == NULL)
 		exit(-1);
-}
-
-void get_argument (void *rsp, int *arg, int count) {
-	
 }
