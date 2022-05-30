@@ -27,6 +27,10 @@ static bool load (const char *file_name, struct intr_frame *if_);
 static void initd (void *f_name);
 static void __do_fork (void *);
 static void argument_stack (char **arg, int count, struct intr_frame *if_);
+int process_add_file (struct file *f);
+void process_close_file (int fd);
+struct file *process_get_file (int fd);
+
 /* General process initializer for initd and other process. */
 void
 process_init (void) {
@@ -224,11 +228,15 @@ process_wait (tid_t child_tid UNUSED) {
 /* Exit the process. This function is called by thread_exit (). */
 void
 process_exit (void) {
-	struct thread *curr = thread_current ();
 	/* TODO: Your code goes here.
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
 	 * TODO: We recommend you to implement process resource cleanup here. */
+	int i;
+
+	for (i = 2; i < 64; i++) {
+		process_close_file(i);
+	}
 
 	process_cleanup ();
 }
@@ -694,4 +702,34 @@ void check_address (void *addr) {
 	
 	if (pml4_get_page(NULL, addr) == NULL)
 		exit(-1);
+}
+
+
+int process_add_file (struct file *f) {
+	struct thread *curr = thread_current ();
+
+	curr->fdt[curr->next_fd++] = f;
+
+	return curr->next_fd-1;
+}
+
+
+void process_close_file (int fd) {
+	struct thread *curr = thread_current ();
+	if (fd >= 2) {
+		file_close (curr->fdt[fd]);
+		curr->fdt[fd] = NULL;
+	}
+}
+
+
+struct file *process_get_file (int fd) {
+	struct thread *curr = thread_current ();
+	int i;
+
+	for (i = 2; i < 64; i++) {
+		if (i == fd) {
+			return curr->fdt[i];
+		}
+	}
 }

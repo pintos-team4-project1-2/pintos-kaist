@@ -26,7 +26,7 @@ pid_t fork (const char *thread_name);
 int exec (const char *file);
 int wait (pid_t);
 int open (const char *file);
-int filesize (int fd);
+int file_size (int fd);
 int read (int fd, void *buffer, unsigned length);
 int write (int fd, const void *buffer, unsigned length);
 void seek (int fd, unsigned position);
@@ -103,15 +103,15 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		case 6:
 			f->R.rax = remove (arg1);
 			break;
-		// case 7:
-		// 	open (arg1);
-		// 	break;
-		// case 8:
-		// 	file_size (arg1);
-		// 	break;
-		// case 9:
-		// 	read (arg1, arg2, arg3);
-		// 	break;
+		case 7:
+			open (arg1);
+			break;
+		case 8:
+			file_size (arg1);
+			break;
+		case 9:
+			read (arg1, arg2, arg3);
+			break;
 		case 10:
 			f->R.rax = write (arg1, arg2, arg3);
 			break;
@@ -154,19 +154,72 @@ bool remove (const char *file){
 	return filesys_remove (file);
 }
 
+int open (const char *file) {
+	lock_acquire (&filesys_lock);
+	struct thread *curr = thread_current ();
+	int i;
+
+	if (file != NULL) {
+		struct file *new_file = filesys_open (file);
+		if (new_file != NULL) {
+			curr->fdt[curr->next_fd++] = new_file;
+			lock_release (&filesys_lock);
+			return curr->next_fd-1;	
+		}
+	}
+
+	lock_release (&filesys_lock);
+	return -1;
+}
+
+int file_size (int fd) {
+	struct thread *curr = thread_current ();
+	off_t file_size = file_length (curr->fdt[fd]);
+
+	if (file_size == 0 || file_size == NULL) {
+		return -1;
+	}
+
+	return file_size;
+}
+
+int read (int fd, void *buffer, unsigned length) {
+	struct thread *curr = thread_current ();
+	int bytes_read;
+
+	if (fd == 0) {
+		bytes_read = input_getc ();
+		return bytes_read;
+	}
+	else if (fd >= 2) {
+		lock_acquire (&filesys_lock);
+		bytes_read = file_read (curr->fdt[fd], buffer, length);
+		lock_release (&filesys_lock);
+
+		if (bytes_read == 0) {
+			return -1;
+		}
+		
+		return bytes_read;
+	}
+	return -1;
+}
+
 int write (int fd, const void *buffer, unsigned length) {
 	// if (!(is_user_vaddr))
 	if (fd == 1){
 		lock_acquire(&filesys_lock);
 		putbuf (buffer, length);
 		lock_release(&filesys_lock);
-		return sizeof(buffer) > length ? sizeof(buffer) : length;
+		return sizeof(buffer);
+		// return sizeof(buffer) > length ? sizeof(buffer) : length;
 	} 
 	else if (fd > 1) {
 		lock_acquire(&filesys_lock);
 		int bytes_written = file_write(thread_current ()->fdt[fd], buffer, length);
 		lock_release(&filesys_lock);
-		return bytes_written > length ? bytes_written : length;
+		return bytes_written;
+		// return bytes_written > length ? bytes_written : length;
 	}
 	return -1;
 }
