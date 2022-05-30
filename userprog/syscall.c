@@ -6,6 +6,7 @@
 #include "threads/loader.h"
 #include "threads/synch.h"
 #include "userprog/gdt.h"
+#include "userprog/process.h"
 #include "threads/flags.h"
 #include "intrinsic.h"
 #include "filesys/filesys.h"
@@ -24,7 +25,7 @@ bool create (const char *file, unsigned initial_size);
 bool remove (const char *file);
 pid_t fork (const char *thread_name);
 int exec (const char *file);
-int wait (pid_t);
+int wait (pid_t pid);
 int open (const char *file);
 int file_size (int fd);
 int read (int fd, void *buffer, unsigned length);
@@ -88,15 +89,15 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		case 1:
 			exit (arg1);
 			break;
-		// case 2:
-		// 	fork (arg1);
-		// 	break;
-		// case 3:
-		// 	exec (arg1);
-		// 	break;
-		// case 4:
-		// 	wait (arg1);
-		// 	break;
+		case 2:
+			f->R.rax = fork (arg1);
+			break;
+		case 3:
+			f->R.rax = exec (arg1);
+			break;
+		case 4:
+			f->R.rax = wait (arg1);
+			break;
 		case 5:
 			f->R.rax = create (arg1, arg2);
 			break;
@@ -121,9 +122,9 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		// case 12:
 		// 	tell (arg1);
 		// 	break;
-		// case 13:
-		// 	close (arg1);
-		// 	break;
+		case 13:
+			close (arg1);
+			break;
 		default:
 			thread_exit ();
 			break;
@@ -172,6 +173,10 @@ int open (const char *file) {
 	return -1;
 }
 
+void close (int fd) {
+	process_close_file(fd);
+}
+
 int file_size (int fd) {
 	struct thread *curr = thread_current ();
 	off_t file_size = file_length (curr->fdt[fd]);
@@ -196,10 +201,6 @@ int read (int fd, void *buffer, unsigned length) {
 		bytes_read = file_read (curr->fdt[fd], buffer, length);
 		lock_release (&filesys_lock);
 
-		if (bytes_read == 0) {
-			return -1;
-		}
-		
 		return bytes_read;
 	}
 	return -1;
@@ -222,4 +223,34 @@ int write (int fd, const void *buffer, unsigned length) {
 		// return bytes_written > length ? bytes_written : length;
 	}
 	return -1;
+}
+
+pid_t fork (const char *thread_name) {
+	struct intr_frame *curr_if = &thread_current ()->tf;
+	sema_down (&thread_current ()->wait_sem);
+	return process_fork (thread_name, curr_if);
+}
+
+int exec (const char *file) {
+	struct thread *curr = thread_current ();
+	struct list_elem *child_elem;
+	struct thread *child_thread;
+	int child_tid = process_create_initd (file);
+
+	if (child_tid != -1) {
+		curr->child_flag = 1;
+	}
+	else {
+		curr->child_flag = -1;
+	}
+
+	child_elem = list_back(&curr->child_list);
+	child_thread = list_entry (child_elem, struct thread, c_elem);
+	sema_down(&child_thread->wait_sem);
+
+	return child_tid;
+}
+
+int wait (pid_t pid) {
+	return process_wait (pid);
 }

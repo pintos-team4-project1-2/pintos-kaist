@@ -4,6 +4,7 @@
         "fixed_point.h": "c",
         "filesys.h": "c",
         "file.h": "c",
-        "*.inc": "c"
+        "*.inc": "c",
+        "list.h": "c"
     }
 }

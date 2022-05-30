@@ -78,6 +78,10 @@ static void do_schedule(int status);
 static void schedule (void);
 static tid_t allocate_tid (void);
 
+struct thread *get_child_process (int pid);
+void remove_child_proceess (struct thread *cp);
+
+
 
 /* Returns true if T appears to point to a valid thread. */
 #define is_thread(t) ((t) != NULL && (t)->magic == THREAD_MAGIC)
@@ -200,6 +204,8 @@ thread_create (const char *name, int priority,
 	struct thread *t;
 	tid_t tid;
 	struct file *file;
+	struct thread *curr = thread_current ();
+	
 
 	ASSERT (function != NULL);
 	/* Allocate one page(4KB) to thread. */
@@ -226,11 +232,14 @@ thread_create (const char *name, int priority,
 
 	t->fdt = (struct file **) calloc(64, (sizeof file));
 	t->next_fd = 2;
-	
+
+	t->parent_tid = curr->tid;
+	sema_init(&t->wait_sem, 0);
+	list_push_back(&curr->child_list, &t->c_elem);
 	/* Add to run queue. */
 	thread_unblock (t);
 
-	if (thread_current ()->priority < priority)
+	if (curr->priority < priority)
 		thread_yield ();
 
 	return tid;
@@ -492,6 +501,7 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->origin_priority = priority;
 	t->magic = THREAD_MAGIC;
 	list_init (&t->donations);
+	list_init (&t->child_list);
 
 	t->nice = NICE_DEFAULT;
 	t->recent_cpu = RECENT_CPU_DEFAULT;
@@ -812,5 +822,32 @@ mlfqs_recalc (void) {
 		struct thread *t = list_entry (e, struct thread, elem);
 		mlfqs_recent_cpu (t);
 		mlfqs_priority (t);
+	}
+}
+
+struct thread *get_child_process (int pid) {
+	struct list child_list = thread_current ()->child_list;
+	struct list_elem *e;
+	for (e = list_begin(&child_list); e != list_end(e); e = list_next(e)) {
+		struct thread *now_thread = list_entry(e, struct thread, c_elem);
+		if (now_thread->tid == pid) {
+			return now_thread;
+		}
+	}
+	return NULL;
+}
+
+void remove_child_proceess (struct thread *cp) {
+	struct list child_list = thread_current ()->child_list;
+	struct list_elem *e;
+
+	while (e != list_end(e)) {
+		struct thread *now_thread = list_entry(e, struct thread, c_elem);
+		if (now_thread == cp) {
+			e = list_remove(e);
+			free(now_thread);
+			return;
+		}
+		e = list_next(e);
 	}
 }
