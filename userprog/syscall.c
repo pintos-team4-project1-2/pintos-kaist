@@ -4,13 +4,17 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "threads/loader.h"
+#include "threads/synch.h"
 #include "userprog/gdt.h"
 #include "threads/flags.h"
 #include "intrinsic.h"
 #include "filesys/filesys.h"
+#include "filesys/file.h"
 #include <console.h>
 
 typedef int pid_t;
+
+struct lock filesys_lock;
 
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
@@ -54,13 +58,20 @@ syscall_init (void) {
 	 * mode stack. Therefore, we masked the FLAG_FL. */
 	write_msr(MSR_SYSCALL_MASK,
 			FLAG_IF | FLAG_TF | FLAG_DF | FLAG_IOPL | FLAG_AC | FLAG_NT);
+	
+	lock_init(&filesys_lock);
 }
 
 /* The main system call interface */
+/* The x86-64 convention for function return values is to place them in the RAX register. 
+ * System calls that return a value can do so by modifying the rax member of struct intr_frame. */
 void
 syscall_handler (struct intr_frame *f UNUSED) {
 	// TODO: Your implementation goes here.
-	check_address(f->rsp);
+	
+	if (!is_user_vaddr(f->rsp))
+		return;
+
 	uint64_t sys_num = f->R.rax;
 	uint64_t arg1 = f->R.rdi;
 	uint64_t arg2 = f->R.rsi;
@@ -70,7 +81,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
 	uint64_t arg6 = f->R.r9;
 
 	// printf ("system call!\n");
-	switch(sys_num){
+	switch (sys_num) {
 		case 0:
 			halt ();
 			break;
@@ -87,10 +98,10 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		// 	wait (arg1);
 		// 	break;
 		case 5:
-			create (arg1, arg2);
+			f->R.rax = create (arg1, arg2);
 			break;
 		case 6:
-			remove (arg1);
+			f->R.rax = remove (arg1);
 			break;
 		// case 7:
 		// 	open (arg1);
@@ -101,9 +112,9 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		// case 9:
 		// 	read (arg1, arg2, arg3);
 		// 	break;
-		// case 10:
-		// 	write (arg1, arg2, arg3);
-		// 	break;
+		case 10:
+			f->R.rax = write (arg1, arg2, arg3);
+			break;
 		// case 11:
 		// 	seek (arg1, arg2);
 		// 	break;
@@ -113,8 +124,10 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		// case 13:
 		// 	close (arg1);
 		// 	break;
+		default:
+			thread_exit ();
+			break;
 	}
-	thread_exit ();
 }
 
 
@@ -123,30 +136,37 @@ void halt(void) {
 }
 
 void exit(int status){
-	char *name_ptr = thread_current ()->name;
-	status = 0;
-	printf("%s: exit(%d)\n", name_ptr, status);
+	// 20220530 added by hg
+	struct thread *curr = thread_current ();
+	curr->exit_code = status;
+	printf("%s: exit(%d)\n", curr->name, curr->exit_code);
 	thread_exit ();
 }
 
-bool create (const char *file, unsigned initial_size){
-	bool success = filesys_create (file, (off_t) initial_size);
-	if (!success)
-		return false;
-	return true; 
+bool create (const char *file, unsigned initial_size) {
+	// 20220530 added by hg
+	if (file == NULL)
+		exit(-1);
+	return filesys_create (file, initial_size);
 }
 
 bool remove (const char *file){
-	bool success = filesys_remove (file);
-	if (!success)
-		return false;
-	return true; 
+	return filesys_remove (file);
 }
 
 int write (int fd, const void *buffer, unsigned length) {
+	// if (!(is_user_vaddr))
 	if (fd == 1){
-		putbuf (buffer, length); 
-		return length;
+		lock_acquire(&filesys_lock);
+		putbuf (buffer, length);
+		lock_release(&filesys_lock);
+		return sizeof(buffer) > length ? sizeof(buffer) : length;
+	} 
+	else if (fd > 1) {
+		lock_acquire(&filesys_lock);
+		int bytes_written = file_write(thread_current ()->fdt[fd], buffer, length);
+		lock_release(&filesys_lock);
+		return bytes_written > length ? bytes_written : length;
 	}
 	return -1;
 }

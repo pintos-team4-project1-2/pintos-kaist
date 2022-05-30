@@ -121,6 +121,12 @@ struct  thread {
 
 	int nice;
 	int recent_cpu;
+
+	// 20220530
+	int exit_code;
+
+	struct file **fdt;
+	int next_fd;
 };
 
 /* If false (default), use round-robin scheduler.

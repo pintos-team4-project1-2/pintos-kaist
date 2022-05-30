@@ -10,13 +10,15 @@
 #include "threads/interrupt.h"
 #include "threads/intr-stubs.h"
 #include "threads/palloc.h"
+#include "threads/malloc.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "threads/fixed_point.h"
 #include "intrinsic.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
-#include "threads/fixed_point.h"
+#include "filesys/file.h"
 
 /* Random value for struct thread's `magic' member.
    Used to detect stack overflow.  See the big comment at the top
@@ -197,6 +199,7 @@ thread_create (const char *name, int priority,
 		thread_func *function, void *aux) {
 	struct thread *t;
 	tid_t tid;
+	struct file *file;
 
 	ASSERT (function != NULL);
 	/* Allocate one page(4KB) to thread. */
@@ -220,6 +223,9 @@ thread_create (const char *name, int priority,
 	t->tf.ss = SEL_KDSEG;
 	t->tf.cs = SEL_KCSEG;
 	t->tf.eflags = FLAG_IF;
+
+	t->fdt = (struct file **)malloc((sizeof file) * 64);
+	
 	
 	/* Add to run queue. */
 	thread_unblock (t);
