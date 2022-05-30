@@ -224,8 +224,8 @@ thread_create (const char *name, int priority,
 	t->tf.cs = SEL_KCSEG;
 	t->tf.eflags = FLAG_IF;
 
-	t->fdt = (struct file **)malloc((sizeof file) * 64);
-	
+	t->fdt = (struct file **) calloc(64, (sizeof file));
+	t->next_fd = 2;
 	
 	/* Add to run queue. */
 	thread_unblock (t);
