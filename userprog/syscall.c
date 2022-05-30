@@ -104,13 +104,13 @@ syscall_handler (struct intr_frame *f UNUSED) {
 			f->R.rax = remove (arg1);
 			break;
 		case 7:
-			open (arg1);
+			f->R.rax = open (arg1);
 			break;
 		case 8:
-			file_size (arg1);
+			f->R.rax = file_size (arg1);
 			break;
 		case 9:
-			read (arg1, arg2, arg3);
+			f->R.rax = read (arg1, arg2, arg3);
 			break;
 		case 10:
 			f->R.rax = write (arg1, arg2, arg3);
