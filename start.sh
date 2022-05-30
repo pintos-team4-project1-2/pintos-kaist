@@ -15,6 +15,6 @@ cd ./build
 # pintos --fs-disk=10 -p tests/userprog/args-single:args-single -- -q -f run 'args-single onearg'
 # pintos --fs-disk=10 -p tests/userprog/echo -- -q -f run 'echo x'
 
-pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/open-missing:open-missing -- -q   -f run open-missing
-pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/open-empty:open-empty -- -q   -f run open-empty
-pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/open-twice:open-twice -p ../../tests/userprog/sample.txt:sample.txt -- -q   -f run open-twice
+pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/read-normal:read-normal -p ../../tests/userprog/sample.txt:sample.txt -- -q   -f run read-normal
+
+pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/read-zero:read-zero -p ../../tests/userprog/sample.txt:sample.txt -- -q   -f run read-zero
