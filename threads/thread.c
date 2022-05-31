@@ -235,13 +235,13 @@ thread_create (const char *name, int priority,
 
 	t->parent_tid = curr->tid;
 	sema_init(&t->wait_sem, 0);
+	sema_init(&t->fork_sem, 0);
 	list_push_back(&curr->child_list, &t->c_elem);
 	/* Add to run queue. */
 	thread_unblock (t);
 
 	if (curr->priority < priority)
 		thread_yield ();
-
 	return tid;
 }
 

@@ -81,8 +81,14 @@ initd (void *f_name) {
 tid_t
 process_fork (const char *name, struct intr_frame *if_ UNUSED) {
 	/* Clone current thread to new thread.*/
-	return thread_create (name,
+	printf("parent rip %p \n", thread_current ()->tf.rip);
+	memcpy (&thread_current ()->temp_tf, if_, sizeof(struct intr_frame));
+	int pid = thread_create (name,
 			PRI_DEFAULT, __do_fork, thread_current ());
+	struct thread *child_thread = get_child_process (pid);
+	sema_down (&child_thread->fork_sem);
+	printf("hi return\n");
+	return pid;
 }
 
 #ifndef VM
@@ -95,12 +101,10 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	void *parent_page;
 	void *newpage;
 	bool writable;
-
 	/* 1. TODO: If the parent_page is kernel page, then return immediately. */
 	if (is_kernel_vaddr(va)) {
 		return false;
 	}
-
 	/* 2. Resolve VA from the parent's page map level 4. */
 	parent_page = pml4_get_page (parent->pml4, va);
 
@@ -113,7 +117,7 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	/* 4. TODO: Duplicate parent's page to the new page and
 	 *    TODO: check whether parent's page is writable or not (set WRITABLE
 	 *    TODO: according to the result). */
-	newpage = memcpy(newpage, parent_page, PGSIZE);
+	memcpy(newpage, parent_page, PGSIZE);
 	writable = is_writable (pte);
 
 	/* 5. Add new page to child's page table at address VA with WRITABLE
@@ -136,10 +140,10 @@ __do_fork (void *aux) {
 	struct thread *parent = (struct thread *) aux; 
 	struct thread *current = thread_current ();
 	/* TODO: somehow pass the parent_if. (i.e. process_fork()'s if_) */
-	struct intr_frame *parent_if = &parent->tf;
+	struct intr_frame *parent_if = &parent->temp_tf;
 	bool succ = true;
 	int i;
-
+	printf("parent rip %p\n",parent->temp_tf.rip);
 	/* 1. Read the cpu context to local stack. */
 	memcpy (&if_, parent_if, sizeof (struct intr_frame));
 	current->tf = if_;
@@ -148,7 +152,7 @@ __do_fork (void *aux) {
 	current->pml4 = pml4_create();
 	if (current->pml4 == NULL)
 		goto error;
-
+		
 	process_activate (current);
 #ifdef VM
 	supplemental_page_table_init (&current->spt);
@@ -158,25 +162,26 @@ __do_fork (void *aux) {
 	if (!pml4_for_each (parent->pml4, duplicate_pte, parent))
 		goto error;
 #endif
-
+	printf("in do_fork2 \n");
 	/* TODO: Your code goes here.
 	 * TODO: Hint) To duplicate the file object, use `file_duplicate`
 	 * TODO:       in include/filesys/file.h. Note that parent should not return
 	 * TODO:       from the fork() until this function successfully duplicates
 	 * TODO:       the resources of parent.*/
-
-	
 	for (i = 0; i < 64; i++) {
 		current->fdt[i] = file_duplicate (parent->fdt[i]);
 	}
-	sema_up (&parent->wait_sem);
-
+	current->next_fd = parent->next_fd;
+	sema_up (&current->fork_sem);
 	process_init ();
 
 	/* Finally, switch to the newly created process. */
 	if (succ)
 		do_iret (&if_);
 error:
+	printf("exit do_fork \n");
+	sema_up (&current->fork_sem);
+	// exit(-1);
 	thread_exit ();
 }
 

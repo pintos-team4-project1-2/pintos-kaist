@@ -111,6 +111,7 @@ struct  thread {
 
 	/* Owned by thread.c. */
 	struct intr_frame tf;               /* Information for switching */
+	struct intr_frame temp_tf;
 	unsigned magic;                     /* Detects stack overflow. */
 
 	int64_t wakeup_tick; 					/* what tick to wake up */
@@ -133,6 +134,7 @@ struct  thread {
 	bool exit_status;
 
 	struct semaphore wait_sem;
+	struct semaphore fork_sem;
 	struct list child_list;
 	struct list_elem c_elem;
 	tid_t parent_tid;	
@@ -190,4 +192,6 @@ void mlfqs_load_avg (void);
 void mlfqs_increment (void);
 void mlfqs_recalc (void);
 
+struct thread *get_child_process (int pid);
+void remove_child_proceess (struct thread *cp);
 #endif /* threads/thread.h */

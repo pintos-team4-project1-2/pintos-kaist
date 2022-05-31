@@ -227,8 +227,10 @@ int write (int fd, const void *buffer, unsigned length) {
 
 pid_t fork (const char *thread_name) {
 	struct intr_frame *curr_if = &thread_current ()->tf;
-	sema_down (&thread_current ()->wait_sem);
-	return process_fork (thread_name, curr_if);
+	int pid = process_fork (thread_name, curr_if);
+	printf("return main\n");
+	printf("return pid %d\n",pid);
+	return pid;
 }
 
 int exec (const char *file) {
