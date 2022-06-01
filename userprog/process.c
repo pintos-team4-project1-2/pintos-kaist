@@ -81,13 +81,13 @@ initd (void *f_name) {
 tid_t
 process_fork (const char *name, struct intr_frame *if_ UNUSED) {
 	/* Clone current thread to new thread.*/
-	printf("parent rip %p \n", thread_current ()->tf.rip);
+	// printf("parent rip %p \n", thread_current ()->tf.rip);
 	memcpy (&thread_current ()->temp_tf, if_, sizeof(struct intr_frame));
 	int pid = thread_create (name,
 			PRI_DEFAULT, __do_fork, thread_current ());
 	struct thread *child_thread = get_child_process (pid);
-	sema_down (&child_thread->fork_sem);
-	printf("hi return\n");
+	sema_down (&child_thread->fork_sema);
+	// printf("hi return\n");
 	return pid;
 }
 
@@ -143,7 +143,7 @@ __do_fork (void *aux) {
 	struct intr_frame *parent_if = &parent->temp_tf;
 	bool succ = true;
 	int i;
-	printf("parent rip %p\n",parent->temp_tf.rip);
+	// printf("parent rip %p\n",parent->temp_tf.rip);
 	/* 1. Read the cpu context to local stack. */
 	memcpy (&if_, parent_if, sizeof (struct intr_frame));
 	current->tf = if_;
@@ -172,7 +172,7 @@ __do_fork (void *aux) {
 		current->fdt[i] = file_duplicate (parent->fdt[i]);
 	}
 	current->next_fd = parent->next_fd;
-	sema_up (&current->fork_sem);
+	sema_up (&current->fork_sema);
 	process_init ();
 
 	/* Finally, switch to the newly created process. */
@@ -180,7 +180,7 @@ __do_fork (void *aux) {
 		do_iret (&if_);
 error:
 	printf("exit do_fork \n");
-	sema_up (&current->fork_sem);
+	sema_up (&current->fork_sema);
 	// exit(-1);
 	thread_exit ();
 }
@@ -190,8 +190,11 @@ error:
 int
 process_exec (void *f_name) {
 	struct thread *curr = thread_current ();
-	char *file_name = f_name;
 	bool success;
+
+
+
+	strlcpy(curr->name, f_name, sizeof curr->name);
 
 	/* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
@@ -204,12 +207,18 @@ process_exec (void *f_name) {
 	/* We first kill the current context */
 	process_cleanup ();
 
-	char *arg[128];
+	// printf("ffile name %p\n", file_name);
+
+
+	char *arg[128] = {0};
 	int count = 0;
     char *token, *save_ptr;
     int i = 0, argc = 0;
-    for (token = strtok_r (file_name, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr))
-        arg[count++] = token;
+
+	char *file_name = curr->name;
+    for (token = strtok_r (file_name, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr)) {
+		arg[count++] = token;
+	}
 
 	/* And then load the binary */
 	success = load (arg[0], &_if);
@@ -219,9 +228,9 @@ process_exec (void *f_name) {
 
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
-	sema_up (&curr->wait_sem);
 	if (!success)
 		return -1;
+
 	/* Start switched process. */
 	do_iret (&_if);
 	NOT_REACHED ();
@@ -238,7 +247,7 @@ process_exec (void *f_name) {
  * This function will be implemented in problem 2-2.  For now, it
  * does nothing. */
 int
-process_wait (tid_t child_tid UNUSED) {
+process_wait (tid_t child_tid) {
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
@@ -247,6 +256,35 @@ process_wait (tid_t child_tid UNUSED) {
 		i--;
 	}
 	return -1;
+
+
+	// struct thread *child_t = get_child_process(child_tid);
+	// if (!child_t || !child_t->pml4) {
+	// 	printf("adsfasd");
+	// 	return child_t->exit_code;
+	// }
+
+	// sema_down(&child_t->wait_sema);
+
+	// return child_t->exit_code;
+	// if (child_t->exit_code == 0) {
+	// 	return child_t->exit_code;
+	// }
+	// else {
+	// 	return -1;
+	// }
+	
+	// struct list_elem *e = list_begin(&thread_current ()->child_list);
+	// while (e != list_end(&thread_current ()->child_list)) {
+	// 	struct thread *c = list_entry(e, struct thread, c_elem);
+	// 	if (c->status != THREAD_DYING) {
+	// 		sema_down(&c->wait_sem);
+	// 	}
+	// 	e = list_remove(e);
+	// 	free(c);
+	// }
+
+	
 }
 
 /* Exit the process. This function is called by thread_exit (). */
@@ -258,10 +296,19 @@ process_exit (void) {
 	 * TODO: We recommend you to implement process resource cleanup here. */
 	int i;
 
+	// struct list_elem *e = list_begin(&thread_current ()->child_list);
+	// while (e != list_end(&thread_current ()->child_list)) {
+	// 	struct thread *c = list_entry(e, struct thread, c_elem);
+	// 	if (c->status != THREAD_DYING) {
+	// 		process_wait(c->tid);
+	// 	}
+	// 	e = list_remove(e);
+	// 	free(c);
+	// }
 	for (i = 2; i < 64; i++) {
 		process_close_file(i);
 	}
-
+	
 	process_cleanup ();
 }
 
@@ -464,7 +511,7 @@ load (const char *file_name, struct intr_frame *if_) {
 	/* TODO: Your code goes here.
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
 	
-	strlcpy(t->name, file_name, sizeof t->name);
+	// strlcpy(t->name, file_name, sizeof t->name);
 
 	success = true;
 

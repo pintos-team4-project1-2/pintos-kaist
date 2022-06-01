@@ -120,7 +120,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		// 	seek (arg1, arg2);
 		// 	break;
 		// case 12:
-		// 	tell (arg1);
+		// 	f->R.rax = tell (arg1);
 		// 	break;
 		case 13:
 			close (arg1);
@@ -137,15 +137,13 @@ void halt(void) {
 }
 
 void exit(int status){
-	// 20220530 added by hg
 	struct thread *curr = thread_current ();
 	curr->exit_code = status;
-	printf("%s: exit(%d)\n", curr->name, curr->exit_code);
+	// printf("%s: exit(%d)\n", curr->name, curr->exit_code);
 	thread_exit ();
 }
 
 bool create (const char *file, unsigned initial_size) {
-	// 20220530 added by hg
 	if (file == NULL)
 		exit(-1);
 	return filesys_create (file, initial_size);
@@ -228,29 +226,36 @@ int write (int fd, const void *buffer, unsigned length) {
 pid_t fork (const char *thread_name) {
 	struct intr_frame *curr_if = &thread_current ()->tf;
 	int pid = process_fork (thread_name, curr_if);
-	printf("return main\n");
-	printf("return pid %d\n",pid);
+	// printf("return main\n");
+	// printf("return pid %d\n",pid);
 	return pid;
 }
 
+// 자식 프로세스를 생성하고 프로그램을 실행시키는 시스템 콜
+// 프로세스 생성에 성공 시 생성된 프로세스에 pid 값을 반환, 실패 시 -1 반환
+// 부모 프로세스는 자식 프로세스의 응용 프로그램이 메모리에 탑재 될 때까지 대기
+// 메모리 탑재 완료시 부모프로세스의 재개, 실패 시 스레드 종료
 int exec (const char *file) {
 	struct thread *curr = thread_current ();
-	struct list_elem *child_elem;
-	struct thread *child_thread;
-	int child_tid = process_create_initd (file);
+	// struct list_elem *child_elem;
+	// struct thread *child_thread;
 
-	if (child_tid != -1) {
-		curr->child_flag = 1;
-	}
-	else {
-		curr->child_flag = -1;
-	}
+	// int child_tid = process_create_initd (file);
+	// child_elem = list_back(&curr->child_list);
 
-	child_elem = list_back(&curr->child_list);
-	child_thread = list_entry (child_elem, struct thread, c_elem);
-	sema_down(&child_thread->wait_sem);
+	// child_thread = list_entry (child_elem, struct thread, c_elem);
+	// sema_down(&child_thread->exec_sema);
 
-	return child_tid;
+	// if (child_tid == TID_ERROR) {
+	// 	// sema_up(&curr->wait_sema);
+	// 	return TID_ERROR;
+	// }
+	// // sema_up(&curr->wait_sema);
+	// return child_tid;
+
+	if (process_exec(file) == -1)
+		return -1;
+	exit(curr->exit_code);
 }
 
 int wait (pid_t pid) {
