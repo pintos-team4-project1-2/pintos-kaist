@@ -55,6 +55,9 @@ process_create_initd (const char *file_name) {
 		return TID_ERROR;
 	strlcpy (fn_copy, file_name, PGSIZE);
 
+	char *save_ptr;
+	strtok_r(file_name, " ", &save_ptr);
+
 	/* Create a new thread to execute FILE_NAME. */
 	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
 	if (tid == TID_ERROR)
@@ -190,10 +193,11 @@ error:
 int
 process_exec (void *f_name) {
 	char *file_name = f_name;
+	char file_copy[128];
 	bool success;
-	
-	// struct thread *curr = thread_current ();
 
+	memcpy(file_copy, file_name, strlen(file_name)+1);
+	
 	/* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
 	 * it stores the execution information to the member. */
@@ -209,23 +213,22 @@ process_exec (void *f_name) {
 	char *arg[128] = {0};
 	int count = 0;
     char *token = {0}, *save_ptr = {0};
-    int i = 0, argc = 0;
 
-    for (token = strtok_r (file_name, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr))
+    for (token = strtok_r (file_copy, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr))
 		arg[count++] = token;
 
 	/* And then load the binary */
 	success = load (arg[0], &_if);
-	// strlcpy(curr->name, arg[0], sizeof curr->name);
 
-	argument_stack(&arg, count, &_if); //////
 	// hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
 
 
 	/* If load failed, quit. */
-	palloc_free_page (file_name);
+	// palloc_free_page (file_name);
 	if (!success)
 		return -1;
+
+	argument_stack(&arg, count, &_if);
 
 	/* Start switched process. */
 	do_iret (&_if);
@@ -418,7 +421,6 @@ load (const char *file_name, struct intr_frame *if_) {
 	bool success = false;
 	int i;
 
-	printf("filename %s\n", file_name);
 	/* Allocate and activate page directory. */
 	t->pml4 = pml4_create ();
 	if (t->pml4 == NULL)

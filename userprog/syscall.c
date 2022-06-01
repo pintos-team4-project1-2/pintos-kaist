@@ -231,10 +231,7 @@ pid_t fork (const char *thread_name) {
 	return pid;
 }
 
-// 자식 프로세스를 생성하고 프로그램을 실행시키는 시스템 콜
-// 프로세스 생성에 성공 시 생성된 프로세스에 pid 값을 반환, 실패 시 -1 반환
-// 부모 프로세스는 자식 프로세스의 응용 프로그램이 메모리에 탑재 될 때까지 대기
-// 메모리 탑재 완료시 부모프로세스의 재개, 실패 시 스레드 종료
+
 int exec (const char *file) {
 	struct thread *curr = thread_current ();
 	// struct list_elem *child_elem;
@@ -253,8 +250,10 @@ int exec (const char *file) {
 	// // sema_up(&curr->wait_sema);
 	// return child_tid;
 
-	if (process_exec(file) == -1)
+	if (process_exec(file) == -1){
+		// exit(-1);
 		return -1;
+	}
 	exit(curr->exit_code);
 }
 
