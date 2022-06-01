@@ -189,12 +189,10 @@ error:
  * Returns -1 on fail. */
 int
 process_exec (void *f_name) {
-	struct thread *curr = thread_current ();
+	char *file_name = f_name;
 	bool success;
-
-
-
-	strlcpy(curr->name, f_name, sizeof curr->name);
+	
+	// struct thread *curr = thread_current ();
 
 	/* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
@@ -204,27 +202,25 @@ process_exec (void *f_name) {
 	_if.cs = SEL_UCSEG;
 	_if.eflags = FLAG_IF | FLAG_MBS;
 
+
 	/* We first kill the current context */
 	process_cleanup ();
 
-	// printf("ffile name %p\n", file_name);
-
-
 	char *arg[128] = {0};
 	int count = 0;
-    char *token, *save_ptr;
+    char *token = {0}, *save_ptr = {0};
     int i = 0, argc = 0;
 
-	char *file_name = curr->name;
-    for (token = strtok_r (file_name, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr)) {
+    for (token = strtok_r (file_name, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr))
 		arg[count++] = token;
-	}
 
 	/* And then load the binary */
 	success = load (arg[0], &_if);
+	// strlcpy(curr->name, arg[0], sizeof curr->name);
 
-	argument_stack(&arg, count, &_if);
+	argument_stack(&arg, count, &_if); //////
 	// hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
+
 
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
@@ -422,6 +418,7 @@ load (const char *file_name, struct intr_frame *if_) {
 	bool success = false;
 	int i;
 
+	printf("filename %s\n", file_name);
 	/* Allocate and activate page directory. */
 	t->pml4 = pml4_create ();
 	if (t->pml4 == NULL)

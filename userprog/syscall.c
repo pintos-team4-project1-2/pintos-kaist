@@ -139,7 +139,7 @@ void halt(void) {
 void exit(int status){
 	struct thread *curr = thread_current ();
 	curr->exit_code = status;
-	// printf("%s: exit(%d)\n", curr->name, curr->exit_code);
+	printf("%s: exit(%d)\n", curr->name, curr->exit_code);
 	thread_exit ();
 }
 

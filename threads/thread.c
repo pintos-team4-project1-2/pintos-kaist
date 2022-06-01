@@ -79,7 +79,7 @@ static void schedule (void);
 static tid_t allocate_tid (void);
 
 struct thread *get_child_process (int pid);
-void remove_child_proceess (struct thread *cp);
+void remove_child_process (struct thread *cp);
 
 
 
@@ -206,7 +206,6 @@ thread_create (const char *name, int priority,
 	struct file *file;
 	struct thread *curr = thread_current ();
 	
-
 	ASSERT (function != NULL);
 	/* Allocate one page(4KB) to thread. */
 	t = palloc_get_page (PAL_ZERO);
@@ -216,8 +215,6 @@ thread_create (const char *name, int priority,
 	/* Initialize thread. */
 	init_thread (t, name, priority);
 	tid = t->tid = allocate_tid ();
-	/* Stack frame for kernel_thread (). */
-	// kf = alloc_frame (t, sizeof *kf);		/* allocate stack */
 
 	/* Call the kernel_thread if it scheduled.
 	 * Note) rdi is 1st argument, and rsi is 2nd argument. */
@@ -234,8 +231,12 @@ thread_create (const char *name, int priority,
 	t->next_fd = 2;
 
 	t->parent_tid = curr->tid;
-	sema_init(&t->wait_sem, 0);
-	sema_init(&t->fork_sem, 0);
+	t->child_flag = true;
+	t->exit_code = 0;
+	t->exit_status = false;
+	sema_init(&t->exec_sema, 0);
+	sema_init(&t->wait_sema, 0);
+	sema_init(&t->fork_sema, 0);
 	list_push_back(&curr->child_list, &t->c_elem);
 	/* Add to run queue. */
 	thread_unblock (t);
@@ -495,7 +496,6 @@ init_thread (struct thread *t, const char *name, int priority) {
 	strlcpy (t->name, name, sizeof t->name);
 	/* allocate 4KB(=PGSIZE) to thread t */
 	/* stack pointer points top of the PGSIZE */
-	/* ??? */
 	t->tf.rsp = (uint64_t) t + PGSIZE - sizeof (void *);
 	t->priority = priority;
 	t->origin_priority = priority;
@@ -827,23 +827,29 @@ mlfqs_recalc (void) {
 
 struct thread *get_child_process (int pid) {
 	struct list child_list = thread_current ()->child_list;
-	struct list_elem *e;
-	for (e = list_begin(&child_list); e != list_end(e); e = list_next(e)) {
-		struct thread *now_thread = list_entry(e, struct thread, c_elem);
-		if (now_thread->tid == pid) {
-			return now_thread;
+	if (!list_empty(&child_list)) {
+		struct list_elem *e;
+
+		for (e = list_begin(&child_list); e != list_end(e); e = list_next(e)) {
+			struct thread *now_thread = list_entry(e, struct thread, c_elem);
+			// printf("curr tid%d\n", thread_current ()->tid);
+
+			// printf("now tid%d\n", now_thread->tid);
+			if (now_thread->tid == pid) {
+				return now_thread;
+			}
 		}
 	}
 	return NULL;
 }
 
-void remove_child_proceess (struct thread *cp) {
+void remove_child_process (struct thread *cp) {
 	struct list child_list = thread_current ()->child_list;
 	struct list_elem *e;
 
 	while (e != list_end(e)) {
 		struct thread *now_thread = list_entry(e, struct thread, c_elem);
-		if (now_thread == cp) {
+		if (now_thread->tid == cp->tid) {
 			e = list_remove(e);
 			free(now_thread);
 			return;

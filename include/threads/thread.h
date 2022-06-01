@@ -130,13 +130,15 @@ struct  thread {
 	struct file **fdt;
 	int next_fd;
 
-	int child_flag;
+	
 	bool exit_status;
 
-	struct semaphore wait_sem;
-	struct semaphore fork_sem;
+	struct semaphore exec_sema;
+	struct semaphore wait_sema;
+	struct semaphore fork_sema;
 	struct list child_list;
 	struct list_elem c_elem;
+	bool child_flag;
 	tid_t parent_tid;	
 
 };
@@ -193,5 +195,5 @@ void mlfqs_increment (void);
 void mlfqs_recalc (void);
 
 struct thread *get_child_process (int pid);
-void remove_child_proceess (struct thread *cp);
+void remove_child_process (struct thread *cp);
 #endif /* threads/thread.h */
