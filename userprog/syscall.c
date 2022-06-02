@@ -23,7 +23,7 @@ void halt(void);
 void exit(int status);
 bool create (const char *file, unsigned initial_size);
 bool remove (const char *file);
-pid_t fork (const char *thread_name);
+pid_t fork (const char *thread_name, struct intr_frame *f);
 int exec (const char *file);
 int wait (pid_t pid);
 int open (const char *file);
@@ -90,7 +90,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
 			exit (arg1);
 			break;
 		case 2:
-			f->R.rax = fork (arg1);
+			f->R.rax = fork (arg1, f);
 			break;
 		case 3:
 			f->R.rax = exec (arg1);
@@ -207,9 +207,9 @@ int read (int fd, void *buffer, unsigned length) {
 int write (int fd, const void *buffer, unsigned length) {
 	// if (!(is_user_vaddr))
 	if (fd == 1){
-		lock_acquire(&filesys_lock);
+		// lock_acquire(&filesys_lock);
 		putbuf (buffer, length);
-		lock_release(&filesys_lock);
+		// lock_release(&filesys_lock);
 		return sizeof(buffer);
 		// return sizeof(buffer) > length ? sizeof(buffer) : length;
 	} 
@@ -223,11 +223,8 @@ int write (int fd, const void *buffer, unsigned length) {
 	return -1;
 }
 
-pid_t fork (const char *thread_name) {
-	struct intr_frame *curr_if = &thread_current ()->tf;
-	int pid = process_fork (thread_name, curr_if);
-	// printf("return main\n");
-	// printf("return pid %d\n",pid);
+pid_t fork (const char *thread_name, struct intr_frame *f) {
+	int pid = process_fork (thread_name, f);
 	return pid;
 }
 
@@ -258,5 +255,6 @@ int exec (const char *file) {
 }
 
 int wait (pid_t pid) {
+
 	return process_wait (pid);
 }
