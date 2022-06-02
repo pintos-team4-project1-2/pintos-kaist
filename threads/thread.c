@@ -215,7 +215,7 @@ thread_create (const char *name, int priority,
 	/* Initialize thread. */
 	init_thread (t, name, priority);
 	tid = t->tid = allocate_tid ();
-
+	
 	/* Call the kernel_thread if it scheduled.
 	 * Note) rdi is 1st argument, and rsi is 2nd argument. */
 	t->tf.rip = (uintptr_t) kernel_thread;
@@ -234,7 +234,6 @@ thread_create (const char *name, int priority,
 	t->child_flag = true;
 	t->exit_code = 0;
 	t->exit_status = false;
-	sema_init(&t->exec_sema, 0);
 	sema_init(&t->wait_sema, 0);
 	sema_init(&t->fork_sema, 0);
 	list_push_back(&curr->child_list, &t->c_elem);
@@ -320,7 +319,6 @@ thread_exit (void) {
 #ifdef USERPROG
 	process_exit ();
 #endif
-
 	/* Just set our status to dying and schedule another process.
 	   We will be destroyed during the call to schedule_tail(). */
 	intr_disable ();
@@ -628,7 +626,13 @@ do_schedule(int status) {
 	while (!list_empty (&destruction_req)) {
 		struct thread *victim =
 			list_entry (list_pop_front (&destruction_req), struct thread, elem);
-		palloc_free_page (victim);
+		
+		// /* free file descriptor table */
+		// for (int i = 0; i < 64; i++)
+		// 	free(victim->fdt[i]);
+		// free(victim->fdt);
+
+		// palloc_free_page (victim);
 	}
 	thread_current ()->status = status;
 	schedule ();
@@ -832,12 +836,8 @@ struct thread *get_child_process (int pid) {
 
 		for (e = list_begin(&child_list); e != list_end(e); e = list_next(e)) {
 			struct thread *now_thread = list_entry(e, struct thread, c_elem);
-			// printf("curr tid%d\n", thread_current ()->tid);
-
-			// printf("now tid%d\n", now_thread->tid);
-			if (now_thread->tid == pid) {
+			if (now_thread->tid == pid)
 				return now_thread;
-			}
 		}
 	}
 	return NULL;
@@ -848,10 +848,18 @@ void remove_child_process (struct thread *cp) {
 	struct list_elem *e;
 
 	while (e != list_end(e)) {
-		struct thread *now_thread = list_entry(e, struct thread, c_elem);
-		if (now_thread->tid == cp->tid) {
+		struct thread *victim = list_entry(e, struct thread, c_elem);
+		if (victim->tid == cp->tid) {
 			e = list_remove(e);
-			free(now_thread);
+			// free(victim);
+			
+			/* free file descriptor table */
+			for (int i = 0; i < 64; i++)
+				free(victim->fdt[i]);			
+			free(victim->fdt);
+
+			palloc_free_page (victim);
+
 			return;
 		}
 		e = list_next(e);

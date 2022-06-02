@@ -133,7 +133,6 @@ struct  thread {
 	
 	bool exit_status;
 
-	struct semaphore exec_sema;
 	struct semaphore wait_sema;
 	struct semaphore fork_sema;
 	struct list child_list;
