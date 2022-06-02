@@ -56,7 +56,7 @@ process_create_initd (const char *file_name) {
 	strlcpy (fn_copy, file_name, PGSIZE);
 
 	char *save_ptr;
-	strtok_r(file_name, " ", &save_ptr);
+	strtok_r (file_name, " ", &save_ptr);
 
 	/* Create a new thread to execute FILE_NAME. */
 	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
@@ -251,13 +251,14 @@ process_wait (tid_t child_tid) {
 	struct thread *child_t = get_child_process(child_tid);
 	int child_exit_code;
 
-	while (child_t->status != THREAD_DYING){
-		sema_down (&child_t->wait_sema);
-	}
-	
-	child_exit_code = child_t -> exit_code;
+	if (child_t == NULL)
+		return -1;
 
-	remove_child_process (child_t);
+	sema_down (&child_t->wait_sema);
+	
+	child_exit_code = child_t->exit_code;
+
+	list_remove (&child_t->c_elem);
 
 	return child_exit_code;
 
@@ -276,25 +277,7 @@ process_wait (tid_t child_tid) {
 
 	// sema_down(&child_t->wait_sema);
 
-	// return child_t->exit_code;
-	// if (child_t->exit_code == 0) {
-	// 	return child_t->exit_code;
-	// }
-	// else {
-	// 	return -1;
-	// }
-	
-	// struct list_elem *e = list_begin(&thread_current ()->child_list);
-	// while (e != list_end(&thread_current ()->child_list)) {
-	// 	struct thread *c = list_entry(e, struct thread, c_elem);
-	// 	if (c->status != THREAD_DYING) {
-	// 		sema_down(&c->wait_sem);
-	// 	}
-	// 	e = list_remove(e);
-	// 	free(c);
-	// }
 
-	
 }
 
 /* Exit the process. This function is called by thread_exit (). */
@@ -309,8 +292,11 @@ process_exit (void) {
 	for (i = 2; i < 64; i++) {
 		process_close_file(i);
 	}
+
+
 	process_cleanup ();
-	sema_up(&thread_current ()->wait_sema);
+	// sema_up이 위에 있으면 exec_read 가끔 FAIL.
+
 }
 
 /* Free the current process's resources. */

@@ -79,7 +79,6 @@ static void schedule (void);
 static tid_t allocate_tid (void);
 
 struct thread *get_child_process (int pid);
-void remove_child_process (struct thread *cp);
 
 
 
@@ -236,7 +235,11 @@ thread_create (const char *name, int priority,
 	t->exit_status = false;
 	sema_init(&t->wait_sema, 0);
 	sema_init(&t->fork_sema, 0);
-	list_push_back(&curr->child_list, &t->c_elem);
+
+
+	if (t != idle_thread)
+		list_push_back(&curr->child_list, &t->c_elem);
+
 	/* Add to run queue. */
 	thread_unblock (t);
 
@@ -315,13 +318,14 @@ thread_tid (void) {
 void
 thread_exit (void) {
 	ASSERT (!intr_context ());
-
 #ifdef USERPROG
 	process_exit ();
 #endif
 	/* Just set our status to dying and schedule another process.
 	   We will be destroyed during the call to schedule_tail(). */
 	intr_disable ();
+	sema_up(&thread_current ()->wait_sema);
+
 	do_schedule (THREAD_DYING);
 	NOT_REACHED ();
 }
@@ -628,11 +632,11 @@ do_schedule(int status) {
 			list_entry (list_pop_front (&destruction_req), struct thread, elem);
 		
 		// /* free file descriptor table */
-		// for (int i = 0; i < 64; i++)
-		// 	free(victim->fdt[i]);
-		// free(victim->fdt);
+		for (int i = 0; i < 64; i++)
+			free(victim->fdt[i]);
+		free(victim->fdt);
 
-		// palloc_free_page (victim);
+		palloc_free_page (victim);
 	}
 	thread_current ()->status = status;
 	schedule ();
@@ -831,37 +835,17 @@ mlfqs_recalc (void) {
 
 struct thread *get_child_process (int pid) {
 	struct list child_list = thread_current ()->child_list;
+
 	if (!list_empty(&child_list)) {
 		struct list_elem *e;
 
-		for (e = list_begin(&child_list); e != list_end(e); e = list_next(e)) {
+		for (e = list_begin (&child_list); e != list_end (&child_list); e = list_next (e)) {
 			struct thread *now_thread = list_entry(e, struct thread, c_elem);
+			if (!is_thread(now_thread))
+				return NULL;
 			if (now_thread->tid == pid)
 				return now_thread;
 		}
 	}
 	return NULL;
-}
-
-void remove_child_process (struct thread *cp) {
-	struct list child_list = thread_current ()->child_list;
-	struct list_elem *e;
-
-	while (e != list_end(e)) {
-		struct thread *victim = list_entry(e, struct thread, c_elem);
-		if (victim->tid == cp->tid) {
-			e = list_remove(e);
-			// free(victim);
-			
-			/* free file descriptor table */
-			for (int i = 0; i < 64; i++)
-				free(victim->fdt[i]);			
-			free(victim->fdt);
-
-			palloc_free_page (victim);
-
-			return;
-		}
-		e = list_next(e);
-	}
 }

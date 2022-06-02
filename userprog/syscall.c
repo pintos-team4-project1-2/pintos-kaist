@@ -116,12 +116,12 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		case 10:
 			f->R.rax = write (arg1, arg2, arg3);
 			break;
-		// case 11:
-		// 	seek (arg1, arg2);
-		// 	break;
-		// case 12:
-		// 	f->R.rax = tell (arg1);
-		// 	break;
+		case 11:
+			seek (arg1, arg2);
+			break;
+		case 12:
+			f->R.rax = tell (arg1);
+			break;
 		case 13:
 			close (arg1);
 			break;
@@ -223,6 +223,17 @@ int write (int fd, const void *buffer, unsigned length) {
 	return -1;
 }
 
+
+void seek (int fd, unsigned position) {
+	return file_seek (thread_current ()->fdt[fd], position);
+}
+
+
+unsigned tell (int fd) {
+	return file_tell (thread_current ()->fdt[fd]);
+}
+
+
 pid_t fork (const char *thread_name, struct intr_frame *f) {
 	int pid = process_fork (thread_name, f);
 	return pid;
@@ -231,30 +242,14 @@ pid_t fork (const char *thread_name, struct intr_frame *f) {
 
 int exec (const char *file) {
 	struct thread *curr = thread_current ();
-	// struct list_elem *child_elem;
-	// struct thread *child_thread;
-
-	// int child_tid = process_create_initd (file);
-	// child_elem = list_back(&curr->child_list);
-
-	// child_thread = list_entry (child_elem, struct thread, c_elem);
-	// sema_down(&child_thread->exec_sema);
-
-	// if (child_tid == TID_ERROR) {
-	// 	// sema_up(&curr->wait_sema);
-	// 	return TID_ERROR;
-	// }
-	// // sema_up(&curr->wait_sema);
-	// return child_tid;
 
 	if (process_exec(file) == -1){
-		// exit(-1);
 		return -1;
 	}
 	exit(curr->exit_code);
 }
 
 int wait (pid_t pid) {
-
+	// printf("pid %d %p\n", pid, &pid);
 	return process_wait (pid);
 }
