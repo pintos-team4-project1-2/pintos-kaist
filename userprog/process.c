@@ -85,12 +85,12 @@ tid_t
 process_fork (const char *name, struct intr_frame *if_ UNUSED) {
 	/* Clone current thread to new thread.*/
 	// printf("parent rip %p \n", thread_current ()->tf.rip);
+	struct thread *curr = thread_current ();
 	memcpy (&thread_current ()->temp_tf, if_, sizeof(struct intr_frame));
 	int pid = thread_create (name,
 			PRI_DEFAULT, __do_fork, thread_current ());
 	struct thread *child_thread = get_child_process (pid);
 	sema_down (&child_thread->fork_sema);
-	// printf("hi return\n");
 	return pid;
 }
 
@@ -106,7 +106,7 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	bool writable;
 	/* 1. TODO: If the parent_page is kernel page, then return immediately. */
 	if (is_kernel_vaddr(va)) {
-		return false;
+		return true;
 	}
 	/* 2. Resolve VA from the parent's page map level 4. */
 	parent_page = pml4_get_page (parent->pml4, va);
@@ -150,6 +150,7 @@ __do_fork (void *aux) {
 	/* 1. Read the cpu context to local stack. */
 	memcpy (&if_, parent_if, sizeof (struct intr_frame));
 	current->tf = if_;
+	if_.R.rax = 0;
 
 	/* 2. Duplicate PT */
 	current->pml4 = pml4_create();
@@ -165,19 +166,19 @@ __do_fork (void *aux) {
 	if (!pml4_for_each (parent->pml4, duplicate_pte, parent))
 		goto error;
 #endif
-	printf("in do_fork2 \n");
 	/* TODO: Your code goes here.
 	 * TODO: Hint) To duplicate the file object, use `file_duplicate`
 	 * TODO:       in include/filesys/file.h. Note that parent should not return
 	 * TODO:       from the fork() until this function successfully duplicates
 	 * TODO:       the resources of parent.*/
 	for (i = 0; i < 64; i++) {
+		if (parent->fdt[i] == NULL)
+			continue;
 		current->fdt[i] = file_duplicate (parent->fdt[i]);
 	}
 	current->next_fd = parent->next_fd;
 	sema_up (&current->fork_sema);
 	process_init ();
-
 	/* Finally, switch to the newly created process. */
 	if (succ)
 		do_iret (&if_);
@@ -250,7 +251,7 @@ process_wait (tid_t child_tid) {
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
-	int i = 1000000000;
+	int i = 1000000000 - timer_ticks()*10000000;
 	while (i > 0) {
 		i--;
 	}
