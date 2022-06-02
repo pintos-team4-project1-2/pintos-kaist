@@ -247,9 +247,12 @@ process_wait (tid_t child_tid) {
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
-
 	struct thread *child_t = get_child_process(child_tid);
 	int child_exit_code;
+
+	if (child_t == NULL){
+		return -1;
+	}
 
 	while (child_t->status != THREAD_DYING){
 		sema_down (&child_t->wait_sema);
