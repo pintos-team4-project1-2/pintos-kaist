@@ -130,8 +130,10 @@ struct  thread {
 
 	struct file **fdt;
 	int next_fd;
+	// struct list file_list;
+	//do_hyun
+	struct file *run_file;
 
-	
 	bool exit_status;
 
 	struct semaphore wait_sema;
@@ -147,6 +149,8 @@ struct  thread {
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
+struct lock load_lock;
+
 extern bool thread_mlfqs;
 
 void thread_init (void);

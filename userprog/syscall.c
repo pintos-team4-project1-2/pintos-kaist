@@ -215,7 +215,9 @@ int write (int fd, const void *buffer, unsigned length) {
 	} 
 	else if (fd > 1) {
 		lock_acquire(&filesys_lock);
+		file_deny_write (thread_current ()->fdt[fd]);
 		int bytes_written = file_write(thread_current ()->fdt[fd], buffer, length);
+		file_allow_write (thread_current ()->fdt[fd]);
 		lock_release(&filesys_lock);
 		return bytes_written;
 		// return bytes_written > length ? bytes_written : length;

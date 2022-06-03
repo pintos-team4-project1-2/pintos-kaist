@@ -16,19 +16,15 @@ Executing 'lg-seq-block':
 (lg-seq-block) create "noodle"
 (lg-seq-block) open "noodle"
 (lg-seq-block) writing "noodle"
-(lg-seq-block) close "noodle"
-(lg-seq-block) open "noodle" for verification
-(lg-seq-block) verified contents of "noodle"
-(lg-seq-block) close "noodle"
-(lg-seq-block) end
-lg-seq-block: exit(0)
+(lg-seq-block) write 513 bytes at offset 0 in "noodle" failed: FAILED
+lg-seq-block: exit(1)
 Execution of 'lg-seq-block' complete.
-Timer: 72 ticks
-Thread: 30 idle ticks, 27 kernel ticks, 15 user ticks
+Timer: 65 ticks
+Thread: 30 idle ticks, 30 kernel ticks, 5 user ticks
 hd0:0: 0 reads, 0 writes
-hd0:1: 553 reads, 697 writes
+hd0:1: 107 reads, 402 writes
 hd1:0: 107 reads, 0 writes
-Console: 1109 characters output
+Console: 1008 characters output
 Keyboard: 0 keys pressed
 Exception: 0 page faults
 Powering off...

@@ -11,7 +11,8 @@ userprog/process.o: ../../userprog/process.c \
  ../../include/userprog/tss.h ../../include/filesys/directory.h \
  ../../include/devices/disk.h ../../include/filesys/file.h \
  ../../include/filesys/off_t.h ../../include/filesys/filesys.h \
- ../../include/threads/flags.h ../../include/threads/init.h \
- ../../include/threads/palloc.h ../../include/threads/mmu.h \
- ../../include/threads/pte.h ../../include/threads/vaddr.h \
- ../../include/intrinsic.h ../../include/threads/mmu.h
+ ../../include/filesys/inode.h ../../include/threads/flags.h \
+ ../../include/threads/init.h ../../include/threads/palloc.h \
+ ../../include/threads/mmu.h ../../include/threads/pte.h \
+ ../../include/threads/vaddr.h ../../include/intrinsic.h \
+ ../../include/threads/mmu.h

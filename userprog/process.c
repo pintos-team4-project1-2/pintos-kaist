@@ -10,6 +10,7 @@
 #include "filesys/directory.h"
 #include "filesys/file.h"
 #include "filesys/filesys.h"
+#include "filesys/inode.h"
 #include "threads/flags.h"
 #include "threads/init.h"
 #include "threads/interrupt.h"
@@ -31,6 +32,10 @@ static void argument_stack (char **arg, int count, struct intr_frame *if_);
 int process_add_file (struct file *f);
 void process_close_file (int fd);
 struct file *process_get_file (int fd);
+
+// do-hyun
+// struct lock load_lock;
+
 
 /* General process initializer for initd and other process. */
 void
@@ -292,7 +297,6 @@ process_exit (void) {
 		process_close_file(i);
 	}
 
-
 	process_cleanup ();
 	// sema_up이 위에 있으면 exec_read 가끔 FAIL.
 
@@ -415,11 +419,16 @@ load (const char *file_name, struct intr_frame *if_) {
 
 	/* Open executable file. */
 	// file = filesys_open (file_name);
+	// lock_acquire(&load_lock);
 	file = filesys_open(file_name);
 	if (file == NULL) {
 		printf ("load: %s: open failed\n", file_name);
 		goto done;
 	}
+
+	file_deny_write(file);
+	//do_hyun
+	t->run_file = file;
 
 	/* Read and verify executable header. */
 	if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
@@ -499,10 +508,12 @@ load (const char *file_name, struct intr_frame *if_) {
 	// strlcpy(t->name, file_name, sizeof t->name);
 
 	success = true;
+	// list_push_back(&t->file_list, &file->inode->elem);
 
 done:
 	/* We arrive here whether the load is successful or not. */
 	file_close (file);
+	// lock_release(&load_lock);
 	return success;
 }
 

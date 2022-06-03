@@ -4,7 +4,7 @@ Kernel command line: -q -f put multi-oom run multi-oom
 Pintos booting with: 
 	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
 	ext_mem: 0x100000 ~ 0x13e0000 (Usable: 19,328 kB)
-Calibrating timer...  130,867,200 loops/s.
+Calibrating timer...  157,081,600 loops/s.
 hd0:0: detected 321 sector (160 kB) disk, model "QEMU HARDDISK", serial "QM00001"
 hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
 hd1:0: detected 107 sector (53 kB) disk, model "QEMU HARDDISK", serial "QM00003"
@@ -13,21 +13,21 @@ Boot complete.
 Putting 'multi-oom' into the file system...
 Executing 'multi-oom':
 (multi-oom) begin
-Interrupt 0x0d (#GP General Protection Exception) at rip=8004218ccb
+Interrupt 0x0d (#GP General Protection Exception) at rip=8004218ce1
  cr2=0000000000000000 error=               0
 rax cccccccccccccccc rbx 0000000000000000 rcx 0000000000000200 rdx 000000800423c618
 rsp 0000008004249cf0 rbp 0000008004249d00 rsi 000000800423c618 rdi 000000800423c618
-rip 0000008004218ccb r8 0000000000000000  r9 0000000000000000 r10 0000000000000000
-r11 0000000000000202 r12 000000800421d5fd r13 0000000000000000 r14 0000000000000000
+rip 0000008004218ce1 r8 0000000000000000  r9 0000000000000000 r10 0000000000000000
+r11 0000000000000202 r12 000000800421d635 r13 0000000000000000 r14 0000000000000000
 r15 0000000000000000 rflags 00000206
 es: 001b ds: 001b cs: 0008 ss: 0010
 Kernel PANIC at ../../userprog/exception.c:97 in kill(): Kernel bug - unexpected interrupt in kernel
-Call stack: 0x8004218717 0x800421d3d2 0x800420971f 0x8004209b3d 0x8004218ec9 0x800420c73a 0x8004220245 0x800421f77d 0x800421f84d 0x800421e1c3 0x800421d9b5 0x800421d797 0x800421d526 0x40011c 0x4003a7 0x40044b 0x400fb0.
+Call stack: 0x800421872d 0x800421d40a 0x8004209735 0x8004209b53 0x8004218edf 0x800420c750 0x80042202e8 0x800421f820 0x800421f8f0 0x800421e266 0x800421d9ed 0x800421d7cf 0x800421d55e 0x40011c 0x4003a7 0x40044b 0x400fb0.
 The `backtrace' program can make call stacks useful.
 Read "Backtraces" in the "Debugging Tools" chapter
 of the Pintos documentation for more information.
-Timer: 65 ticks
-Thread: 30 idle ticks, 28 kernel ticks, 7 user ticks
+Timer: 68 ticks
+Thread: 30 idle ticks, 30 kernel ticks, 8 user ticks
 hd0:0: 0 reads, 0 writes
 hd0:1: 212 reads, 242 writes
 hd1:0: 107 reads, 0 writes

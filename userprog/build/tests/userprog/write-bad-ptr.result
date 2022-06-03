@@ -1,1 +1,2 @@
-PASS
+FAIL
+run: should have exited with -1: FAILED

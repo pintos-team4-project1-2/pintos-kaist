@@ -47,6 +47,9 @@ static struct thread *initial_thread;
 /* Lock used by allocate_tid(). */
 static struct lock tid_lock;
 
+/*do-hyun*/
+struct lock load_lock;
+
 /* Thread destruction requests */
 static struct list destruction_req;
 
@@ -126,9 +129,12 @@ thread_init (void) {
 
 	/* Init the global thread context */
 	lock_init (&tid_lock);
+	//do_hyun
+	lock_init (&load_lock);
 	list_init (&ready_list);
-	list_init(&sleep_list);
+	list_init (&sleep_list);
 	list_init (&destruction_req);
+
 
 	/* Set up a thread structure for the running thread. */
 	initial_thread = running_thread ();
@@ -508,6 +514,7 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->magic = THREAD_MAGIC;
 	list_init (&t->donations);
 	list_init (&t->child_list);
+	// list_init (&t->file_list);
 
 	t->nice = NICE_DEFAULT;
 	t->recent_cpu = RECENT_CPU_DEFAULT;
