@@ -12,6 +12,13 @@ cd ./build
 # pintos -v -k -T 60 -m 20   -- -q   run alarm-priority
 # cd build
 
+
+
+# ?????
+pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/args-none:args-none -- -q   -f run args-none
+
+
+
 # PASS!
 # pintos -- -q   run priority-donate-one
 # pintos --fs-disk=10 -p tests/userprog/args-single:args-single -- -q -f run 'args-single onearg'
@@ -49,4 +56,4 @@ cd ./build
 # pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/filesys/base/syn-write:syn-write -p tests/filesys/base/child-syn-wrt:child-syn-wrt -- -q   -f run syn-write
 # pintos -v -k -T 600 -m 20 -m 20   --fs-disk=10 -p tests/userprog/no-vm/multi-oom:multi-oom -- -q   -f run multi-oom
 
-pintos --fs-disk=10  -- -q  -threads-tests -f run priority-sema
+# pintos -v -k -T 20 -m 20 --fs-disk=10  -- -q  -threads-tests -f run priority-sema

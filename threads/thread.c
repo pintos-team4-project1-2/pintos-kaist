@@ -132,8 +132,10 @@ thread_init (void) {
 
 	/* Set up a thread structure for the running thread. */
 	initial_thread = running_thread ();
+	
 	init_thread (initial_thread, "main", PRI_DEFAULT);
 	initial_thread->status = THREAD_RUNNING;
+
 	initial_thread->tid = allocate_tid ();
 }
 
@@ -145,6 +147,7 @@ thread_start (void) {
 	struct semaphore idle_started;
 	sema_init (&idle_started, 0);
 	thread_create ("idle", PRI_MIN, idle, &idle_started);
+
 	load_avg = LOAD_AVG_DEFAULT;
 
 	/* Start preemptive thread scheduling. */
@@ -245,6 +248,7 @@ thread_create (const char *name, int priority,
 
 	if (curr->priority < priority)
 		thread_yield ();
+		
 	return tid;
 }
 
@@ -632,9 +636,9 @@ do_schedule(int status) {
 			list_entry (list_pop_front (&destruction_req), struct thread, elem);
 		
 		// /* free file descriptor table */
-		for (int i = 0; i < 64; i++)
-			free(victim->fdt[i]);
-		free(victim->fdt);
+		// for (int i = 0; i < 64; i++)
+		// 	free(victim->fdt[i]);
+		// free(victim->fdt);
 
 		palloc_free_page (victim);
 	}

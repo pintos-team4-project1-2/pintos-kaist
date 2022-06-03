@@ -6,7 +6,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Thu Jun  2 14:17:35 2022
+# Make data base, printed on Fri Jun  3 13:39:49 2022
 
 # Variables
 
@@ -51,7 +51,7 @@ LESSOPEN = | /usr/bin/lesspipe %s
 # environment
 VSCODE_CWD = /home/ubuntu
 # environment
-SSH_CONNECTION = 143.248.204.8 62251 172.31.35.253 22
+SSH_CONNECTION = 143.248.220.176 51919 172.31.35.253 22
 # environment
 PATH = /home/ubuntu/.vscode-server/bin/c3511e6c69bb39013c4a4b7b9566ec1ca73fc4d5/bin/remote-cli:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
 # environment
@@ -71,7 +71,7 @@ CLEAN_SUBDIRS = $(BUILD_SUBDIRS)
 # environment
 PWD = /home/ubuntu/swjungle/pintos-kaist
 # environment
-VSCODE_IPC_HOOK_CLI = /run/user/1000/vscode-ipc-cc2db583-5bd1-488e-9128-378670ae173c.sock
+VSCODE_IPC_HOOK_CLI = /run/user/1000/vscode-ipc-6681d52c-7efa-4878-aed0-ea65e6811a65.sock
 # automatic
 *D = $(patsubst %/,%,$(dir $*))
 # makefile (from 'Makefile', line 1)
@@ -103,7 +103,7 @@ MAKECMDGOALS := all
 # environment
 SHLVL = 3
 # environment
-XDG_SESSION_ID = 416
+XDG_SESSION_ID = 8
 # environment
 USER = ubuntu
 # makefile
@@ -121,7 +121,7 @@ MAKEFLAGS = pqrR
 # environment
 MFLAGS = -pqrR
 # environment
-SSH_CLIENT = 143.248.204.8 62251 22
+SSH_CLIENT = 143.248.220.176 51919 22
 # environment
 MAIL = /var/mail/ubuntu
 # automatic
@@ -163,7 +163,7 @@ VSCODE_EXTHOST_WILL_SEND_SOCKET = true
 
 # Directories
 
-# . (device 51713, inode 258124): 27 files, no impossibilities.
+# . (device 51713, inode 258003): 27 files, no impossibilities.
 
 # 27 files, no impossibilities in 1 directories.
 
@@ -225,7 +225,7 @@ tags::
 # Not a target:
 Makefile:
 #  Implicit rule search has been done.
-#  Last modified 2022-05-19 16:01:37.008516189
+#  Last modified 2022-06-03 12:39:38.387298822
 #  File has been updated.
 #  Successfully updated.
 
@@ -280,12 +280,13 @@ TAGS::
 
 # No general ('VPATH' variable) search path.
 
+ 
 # strcache buffers: 1 (0) / strings = 39 / storage = 350 B / avg = 8 B
 # current buf: size = 8162 B / used = 350 B / count = 39 / avg = 8 B
 
 # strcache performance: lookups = 56 / hit rate = 30%
 # hash-table stats:
 # Load=39/8192=0%, Rehash=0, Collisions=1/56=2%
-# Finished Make data base on Thu Jun  2 14:17:35 2022
+# Finished Make data base on Fri Jun  3 13:39:49 2022
 
  
