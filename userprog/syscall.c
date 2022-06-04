@@ -158,7 +158,7 @@ int open (const char *file) {
 	struct thread *curr = thread_current ();
 	int i;
 
-	if (file != NULL) {
+	if (file != NULL && curr->next_fd < 64) {
 		struct file *new_file = filesys_open (file);
 		if (new_file != NULL) {
 			curr->fdt[curr->next_fd] = new_file;
