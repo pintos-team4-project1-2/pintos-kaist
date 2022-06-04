@@ -261,6 +261,7 @@ process_wait (tid_t child_tid) {
 
 	list_remove (&child_t->c_elem);
 
+	// sema_up (&child_t->exit_sema);
 	return child_exit_code;
 
 	// int i = 100000000 - 1000000*timer_ticks ();
@@ -297,6 +298,8 @@ process_exit (void) {
 	file_close (thread_current ()->run_file);
 	process_cleanup ();
 	// sema_up이 위에 있으면 exec_read 가끔 FAIL.
+	sema_up(&thread_current ()->wait_sema);
+	// sema_down(&thread_current()->exit_sema);
 
 }
 

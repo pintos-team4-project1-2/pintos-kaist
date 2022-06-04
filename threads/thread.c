@@ -238,6 +238,7 @@ thread_create (const char *name, int priority,
 	t->exit_status = false;
 	sema_init(&t->wait_sema, 0);
 	sema_init(&t->fork_sema, 0);
+	sema_init(&t->exit_sema, 0);
 
 
 	if (t != idle_thread)
@@ -328,7 +329,6 @@ thread_exit (void) {
 	/* Just set our status to dying and schedule another process.
 	   We will be destroyed during the call to schedule_tail(). */
 	intr_disable ();
-	sema_up(&thread_current ()->wait_sema);
 
 	do_schedule (THREAD_DYING);
 	NOT_REACHED ();
