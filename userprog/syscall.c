@@ -161,9 +161,9 @@ int open (const char *file) {
 	if (file != NULL) {
 		struct file *new_file = filesys_open (file);
 		if (new_file != NULL) {
-			curr->fdt[curr->next_fd++] = new_file;
+			curr->fdt[curr->next_fd] = new_file;
 			lock_release (&filesys_lock);
-			return curr->next_fd-1;	
+			return curr->next_fd++;	
 		}
 	}
 
@@ -215,7 +215,7 @@ int write (int fd, const void *buffer, unsigned length) {
 	} 
 	else if (fd > 1) {
 		lock_acquire(&filesys_lock);
-		int bytes_written = file_write(thread_current ()->fdt[fd], buffer, length);
+		int bytes_written = file_write (thread_current ()->fdt[fd], buffer, length);
 		lock_release(&filesys_lock);
 		return bytes_written;
 		// return bytes_written > length ? bytes_written : length;

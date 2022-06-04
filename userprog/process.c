@@ -1,4 +1,5 @@
 #include "userprog/process.h"
+#include "userprog/syscall.h"
 #include <debug.h>
 #include <inttypes.h>
 #include <round.h>
@@ -31,7 +32,6 @@ static void argument_stack (char **arg, int count, struct intr_frame *if_);
 int process_add_file (struct file *f);
 void process_close_file (int fd);
 struct file *process_get_file (int fd);
-struct lock loadlock;
 
 /* General process initializer for initd and other process. */
 void
@@ -299,7 +299,7 @@ process_exit (void) {
 	process_cleanup ();
 	// sema_up이 위에 있으면 exec_read 가끔 FAIL.
 	sema_up(&thread_current ()->wait_sema);
-	// sema_down(&thread_current()->exit_sema);
+	sema_down(&thread_current()->exit_sema);
 
 }
 
@@ -419,16 +419,17 @@ load (const char *file_name, struct intr_frame *if_) {
 	process_activate (thread_current ());
 
 	/* Open executable file. */
-	// file = filesys_open (file_name);
+	lock_acquire (&filesys_lock);
 	file = filesys_open(file_name);
 	if (file == NULL) {
 		printf ("load: %s: open failed\n", file_name);
+		lock_release (&filesys_lock);
 		goto done;
 	}
 
 	t->run_file = file;
 	file_deny_write(file);
-
+	lock_release (&filesys_lock);
 	/* Read and verify executable header. */
 	if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
 			|| memcmp (ehdr.e_ident, "\177ELF\2\1\1", 7)
