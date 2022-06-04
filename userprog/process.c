@@ -31,6 +31,7 @@ static void argument_stack (char **arg, int count, struct intr_frame *if_);
 int process_add_file (struct file *f);
 void process_close_file (int fd);
 struct file *process_get_file (int fd);
+struct lock loadlock;
 
 /* General process initializer for initd and other process. */
 void
@@ -217,6 +218,7 @@ process_exec (void *f_name) {
 		arg[count++] = token;
 
 	/* And then load the binary */
+
 	success = load (arg[0], &_if);
 
 	/* If load failed, quit. */
@@ -421,6 +423,8 @@ load (const char *file_name, struct intr_frame *if_) {
 		goto done;
 	}
 
+	file_deny_write(file);
+
 	/* Read and verify executable header. */
 	if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
 			|| memcmp (ehdr.e_ident, "\177ELF\2\1\1", 7)
@@ -502,7 +506,7 @@ load (const char *file_name, struct intr_frame *if_) {
 
 done:
 	/* We arrive here whether the load is successful or not. */
-	file_close (file);
+	// file_close (file);
 	return success;
 }
 

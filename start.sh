@@ -15,9 +15,7 @@ cd ./build
 
 
 # ?????
-pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/args-none:args-none -- -q   -f run args-none
-
-
+# pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/args-none:args-none -- -q   -f run args-none
 
 # PASS!
 # pintos -- -q   run priority-donate-one
@@ -46,9 +44,9 @@ pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/args-none:args-none --
 
 # pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/wait-twice:wait-twice -p tests/userprog/child-simple:child-simple -- -q   -f run wait-twice
 # pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/wait-bad-pid:wait-bad-pid -- -q   -f run wait-bad-pid
-# pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/rox-simple:rox-simple -- -q   -f run rox-simple
-# pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/rox-child:rox-child -p tests/userprog/child-rox:child-rox -- -q   -f run rox-child
-# pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/rox-multichild:rox-multichild -p tests/userprog/child-rox:child-rox -- -q   -f run rox-multichild
+pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/rox-simple:rox-simple -- -q   -f run rox-simple
+pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/rox-child:rox-child -p tests/userprog/child-rox:child-rox -- -q   -f run rox-child
+pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/rox-multichild:rox-multichild -p tests/userprog/child-rox:child-rox -- -q   -f run rox-multichild
 # pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/filesys/base/lg-random:lg-random -- -q   -f run lg-random
 # pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/filesys/base/sm-random:sm-random -- -q   -f run sm-random
 # pintos -v -k -T 300 -m 20   --fs-disk=10 -p tests/filesys/base/syn-read:syn-read -p tests/filesys/base/child-syn-read:child-syn-read -- -q   -f run syn-read
