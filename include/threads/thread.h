@@ -122,6 +122,9 @@ struct  thread {
 	struct list donations;
 	struct list_elem d_elem;
 
+	struct file *run_file;
+	
+
 	int nice;
 	int recent_cpu;
 

@@ -294,7 +294,7 @@ process_exit (void) {
 		process_close_file(i);
 	}
 
-
+	file_close (thread_current ()->run_file);
 	process_cleanup ();
 	// sema_up이 위에 있으면 exec_read 가끔 FAIL.
 
@@ -423,6 +423,7 @@ load (const char *file_name, struct intr_frame *if_) {
 		goto done;
 	}
 
+	t->run_file = file;
 	file_deny_write(file);
 
 	/* Read and verify executable header. */
