@@ -127,7 +127,7 @@ struct  thread {
 	int nice;
 	int recent_cpu;
 
-	struct file *fdt[FILE_NUM];
+	struct file **fdt;
 	struct file *run_file;
 	int next_fd;
 
@@ -137,8 +137,6 @@ struct  thread {
 	
 	struct list child_list;
 	struct list_elem c_elem;
-
-	tid_t parent_tid;
 
 	int exit_code;
 };
@@ -183,6 +181,7 @@ void thread_awake (int64_t ticks);
 void test_max_priority (void);
 
 bool cmp_priority (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
+bool cmp_donate_priority (const struct list_elem *a_, const struct list_elem *b_, void *aux UNUSED);
 
 void donate_priority (void);
 void remove_with_lock (struct lock *lock);

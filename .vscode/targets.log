@@ -6,7 +6,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Sun Jun  5 13:55:16 2022
+# Make data base, printed on Sun Jun  5 17:39:37 2022
 
 # Variables
 
@@ -71,7 +71,7 @@ CLEAN_SUBDIRS = $(BUILD_SUBDIRS)
 # environment
 PWD = /home/ubuntu/swjungle/pintos-kaist
 # environment
-VSCODE_IPC_HOOK_CLI = /run/user/1000/vscode-ipc-dfa6872e-d1a2-403f-b907-a01fb0f23fb3.sock
+VSCODE_IPC_HOOK_CLI = /run/user/1000/vscode-ipc-d2e828f3-9e6d-4d91-9510-6ff90ea3fc72.sock
 # automatic
 *D = $(patsubst %/,%,$(dir $*))
 # makefile (from 'Makefile', line 1)
@@ -287,6 +287,6 @@ TAGS::
 # strcache performance: lookups = 57 / hit rate = 29%
 # hash-table stats:
 # Load=40/8192=0%, Rehash=0, Collisions=1/57=2%
-# Finished Make data base on Sun Jun  5 13:55:16 2022
+# Finished Make data base on Sun Jun  5 17:39:37 2022
 
  

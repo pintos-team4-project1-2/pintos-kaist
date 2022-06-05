@@ -28,7 +28,7 @@ static void process_cleanup (void);
 static bool load (const char *file_name, struct intr_frame *if_);
 static void initd (void *f_name);
 static void __do_fork (void *);
-static void argument_stack (char **arg, int count, struct intr_frame *if_);
+static void argument_stack(char **arg, int count, struct intr_frame *if_);
 int process_add_file (struct file *f);
 void process_close_file (int fd);
 struct file *process_get_file (int fd);
@@ -91,8 +91,8 @@ process_fork (const char *name, struct intr_frame *if_ UNUSED) {
 	int pid = thread_create (name, PRI_DEFAULT, __do_fork, current);
 	struct thread *child_thread = get_child_process (pid);
 
-	// if (child_thread != NULL)
-	sema_down (&child_thread->fork_sema);
+	if (child_thread != NULL)
+		sema_down (&child_thread->fork_sema);
 	return pid;
 }
 
@@ -175,6 +175,8 @@ __do_fork (void *aux) {
 	for (i = 0; i < 64; i++) {
 		if (parent->fdt[i] != NULL)
 			current->fdt[i] = file_duplicate (parent->fdt[i]);
+		else
+			current->fdt[i] = NULL;
 	}
 	current->next_fd = parent->next_fd;
 	sema_up (&current->fork_sema);
@@ -222,7 +224,7 @@ process_exec (void *f_name) {
 	success = load (arg[0], &_if);
 
 	/* If load failed, quit. */
-	palloc_free_page (file_name);
+	// palloc_free_page (file_name);
 	if (!success)
 		return -1;
 
@@ -249,39 +251,29 @@ process_wait (tid_t child_tid) {
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
-	// struct thread *child_t = get_child_process(child_tid);
+	struct thread *child_t = get_child_process(child_tid);
 	// printf("curr id %d child id %d\n", thread_tid (), child_t->tid);
 
-	// int child_exit_code;
+	int child_exit_code;
 
-	// if (child_t == NULL)
-	// 	return -1;
+	if (child_t == NULL)
+		return -1;
+	// printf("curr id %d exit code %d\n", thread_tid (), thread_current ()->exit_code);
 
-	// sema_down (&child_t->wait_sema);
+	sema_down (&child_t->wait_sema);
 	
-	// child_exit_code = child_t->exit_code;
+	child_exit_code = child_t->exit_code;
 
-	// list_remove (&child_t->c_elem);
+	list_remove (&child_t->c_elem);
 
-	// // sema_up (&child_t->exit_sema);
-	// return child_exit_code;
+	sema_up (&child_t->exit_sema);
+	return child_exit_code;
 
-	int i = 100000000 - 1000000*timer_ticks ();
-	while (i > 0) {
-		i--;
-	}
-	return  -1;
-
-
-	// struct thread *child_t = get_child_process(child_tid);
-	// if (!child_t || !child_t->pml4) {
-	// 	printf("adsfasd");
-	// 	return child_t->exit_code;
+	// int i = 100000000 - 1000000*timer_ticks ();
+	// while (i > 0) {
+	// 	i--;
 	// }
-
-	// sema_down(&child_t->wait_sema);
-
-
+	// return  -1;
 }
 
 /* Exit the process. This function is called by thread_exit (). */
@@ -291,20 +283,17 @@ process_exit (void) {
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
 	 * TODO: We recommend you to implement process resource cleanup here. */
-	struct thread *current = thread_current ();
-	int i;
-	for (i = 0; i < FILE_NUM; i++) {
-		if (i >= 3) {
-			file_close (current->fdt[i]);
-			current->fdt[i] = NULL;
-		}
-	}
+	// struct thread *current = thread_current ();
+	int fd;
 
-	// // file_close (thread_current ()->run_file);
-	// process_cleanup ();
-	// // sema_up이 위에 있으면 exec_read 가끔 FAIL.
-	// sema_up (&thread_current ()->wait_sema);
-	// // sema_down (&thread_current ()->exit_sema);
+	file_close (thread_current ()->run_file);
+
+	for (fd = 0; fd < FILE_NUM; fd++)
+		process_close_file(fd);
+	process_cleanup ();
+	// sema_up이 위에 있으면 exec_read 가끔 FAIL.
+	sema_up (&thread_current ()->wait_sema);
+	sema_down (&thread_current ()->exit_sema);
 }
 
 /* Free the current process's resources. */
@@ -422,18 +411,17 @@ load (const char *file_name, struct intr_frame *if_) {
 		goto done;
 	process_activate (thread_current ());
 
-	/* Open executable file. */
 	lock_acquire (&filesys_lock);
+
+	/* Open executable file. */
 	file = filesys_open(file_name);
 	if (file == NULL) {
 		printf ("load: %s: open failed\n", file_name);
 		lock_release (&filesys_lock);
 		goto done;
 	}
-
-	t->run_file = file;
-	file_deny_write(file);
 	lock_release (&filesys_lock);
+
 	/* Read and verify executable header. */
 	if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
 			|| memcmp (ehdr.e_ident, "\177ELF\2\1\1", 7)
@@ -511,10 +499,68 @@ load (const char *file_name, struct intr_frame *if_) {
 	
 	success = true;
 
+	t->run_file = file;
+	file_deny_write(file);
 done:
 	/* We arrive here whether the load is successful or not. */
 	// file_close (file);
+	// lock_release (&filesys_lock);
+
 	return success;
+}
+
+
+static void 
+argument_stack(char **arg, int count, struct intr_frame *if_) {
+	int i;
+
+	for (i = count-1; i > -1; i--) {
+		if_->rsp -= (strlen(arg[i])+1);
+		memcpy(if_->rsp, arg[i], strlen(arg[i])+1);
+		arg[i] = if_->rsp;
+	}
+
+	memset(if_->rsp&~7, 0, if_->rsp - (if_->rsp&~7));
+	if_->rsp &= ~7;
+
+	if_->rsp -= 8;
+	memset(if_->rsp, 0, 8);
+
+	for (i = count-1; i > -1; i--) {
+		if_->rsp -= 8;
+		memcpy (if_->rsp, &arg[i], 8);
+	}
+	
+	if_->R.rdi = count;
+	if_->R.rsi = if_->rsp;
+
+	/* return address */
+	if_->rsp -= 8;
+	memset(if_->rsp, 0, 8);
+}
+
+
+int process_add_file (struct file *f) {
+	struct thread *curr = thread_current ();
+
+	curr->fdt[curr->next_fd] = f;
+
+	return curr->next_fd++;
+}
+
+
+struct file *process_get_file (int fd) {
+	if (fd >= 3)
+		return thread_current ()->fdt[fd];
+}
+
+
+void process_close_file (int fd) {
+	struct thread *curr = thread_current ();
+	if (fd >= 3) {
+		file_close (curr->fdt[fd]);
+		curr->fdt[fd] = NULL;
+	}
 }
 
 
@@ -729,54 +775,3 @@ setup_stack (struct intr_frame *if_) {
 	return success;
 }
 #endif /* VM */
-
-static void 
-argument_stack(char **arg, int count, struct intr_frame *if_) {
-	int i;
-
-	for (i = count-1; i > -1; i--) {
-		if_->rsp -= (strlen(arg[i])+1);
-		memcpy(if_->rsp, arg[i], strlen(arg[i])+1);
-		arg[i] = if_->rsp;
-	}
-
-	memset(if_->rsp&~7, 0, if_->rsp - (if_->rsp&~7));
-	if_->rsp &= ~7;
-
-	if_->rsp -= 8;
-	memset(if_->rsp, 0, 8);
-
-	for (i = count-1; i > -1; i--) {
-		if_->rsp -= 8;
-		memcpy (if_->rsp, &arg[i], 8);
-	}
-	
-	if_->R.rdi = count;
-	if_->R.rsi = if_->rsp;
-
-	/* return address */
-	if_->rsp -= 8;
-	memset(if_->rsp, 0, 8);
-}
-
-
-int process_add_file (struct file *f) {
-	struct thread *curr = thread_current ();
-
-	curr->fdt[curr->next_fd] = f;
-
-	return curr->next_fd++;
-}
-
-
-void process_close_file (int fd) {
-
-}
-
-
-struct file *process_get_file (int fd) {
-	if (fd >= 3)
-		return thread_current ()->fdt[fd];
-}
-
-

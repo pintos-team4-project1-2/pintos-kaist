@@ -229,14 +229,12 @@ thread_create (const char *name, int priority,
 	t->tf.cs = SEL_KCSEG;
 	t->tf.eflags = FLAG_IF;
 	
-	sema_init(&t->wait_sema, 0);
 	sema_init(&t->fork_sema, 0);
+	sema_init(&t->wait_sema, 0);
 	sema_init(&t->exit_sema, 0);
 
-	memset (t->fdt, 0, FILE_NUM);
+	t->fdt = palloc_get_page(PAL_ZERO);
 	t->next_fd = 3;
-
-	t->parent_tid = current->tid;
 
 	t->exit_code = 0;
 
@@ -246,8 +244,9 @@ thread_create (const char *name, int priority,
 	/* Add to run queue. */
 	thread_unblock (t);
 
-	if (current->priority < priority)
-		thread_yield ();
+	// if (current->priority < priority)
+	// 	thread_yield ();
+	test_max_priority ();
 		
 	return tid;
 }
@@ -262,6 +261,7 @@ void
 thread_block (void) {
 	ASSERT (!intr_context ());
 	ASSERT (intr_get_level () == INTR_OFF);
+
 	thread_current ()->status = THREAD_BLOCKED;
 	schedule ();
 }
@@ -325,6 +325,8 @@ thread_exit (void) {
 #ifdef USERPROG
 	process_exit ();
 #endif
+	palloc_free_page(thread_current ()->fdt);
+
 	/* Just set our status to dying and schedule another process.
 	   We will be destroyed during the call to schedule_tail(). */
 	intr_disable ();
@@ -337,14 +339,16 @@ thread_exit (void) {
    may be scheduled again immediately at the scheduler's whim. */
 void
 thread_yield (void) {
-	struct thread *curr = thread_current ();
+	// printf("yield exit_sema value %d\n", thread_current ()->exit_sema.value);
+
+	struct thread *current = thread_current ();
 	enum intr_level old_level;
 
 	ASSERT (!intr_context ());
 
 	old_level = intr_disable ();
-	if (curr != idle_thread)
-		list_insert_ordered (&ready_list, &curr->elem, cmp_priority, NULL);
+	if (current != idle_thread)
+		list_insert_ordered (&ready_list, &current->elem, cmp_priority, NULL);
 	do_schedule (THREAD_READY);
 	intr_set_level (old_level);
 }
@@ -352,26 +356,41 @@ thread_yield (void) {
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void
 thread_set_priority (int new_priority) {
+
 	if (thread_mlfqs)
 		return;
 		
-	struct thread *curr = thread_current ();
+	struct thread *current = thread_current ();
 
-	curr->origin_priority = new_priority;
+	current->origin_priority = new_priority;
 	refresh_priority ();
-	if (curr->wait_on_lock != NULL)
+	if (current->wait_on_lock != NULL)
 		donate_priority ();
 	test_max_priority ();
 }
 
 void
 test_max_priority (void) {
+
 	if (!list_empty(&ready_list)) {
 		if (cmp_priority (list_begin (&ready_list), &thread_current ()->elem, NULL)) 
 			thread_yield ();
 	}
 }
+// void test_max_priority(void)
+// {
+// 	struct thread *curr_thread = thread_current();
+// 	struct thread *most_priority_thread = curr_thread;
+// 	if (!list_empty(&ready_list))
+// 	{
+// 		most_priority_thread = list_entry(list_front(&ready_list), struct thread, elem); // elem에 대한 thread를 가져다줌
+// 	}
 
+// 	if (most_priority_thread->priority > curr_thread->priority)
+// 	{
+// 		thread_yield();
+// 	}
+// }
 bool
 cmp_priority (const struct list_elem *a_, const struct list_elem *b_, void *aux UNUSED) {
 	struct thread *thread_a = list_entry(a_, struct thread, elem);
@@ -528,6 +547,7 @@ next_thread_to_run (void) {
 /* Use iretq to launch the thread */
 void
 do_iret (struct intr_frame *tf) {
+
 	__asm __volatile(
 			"movq %0, %%rsp\n"
 			"movq 0(%%rsp),%%r15\n"
@@ -567,6 +587,7 @@ static void
 thread_launch (struct thread *th) {
 	uint64_t tf_cur = (uint64_t) &running_thread ()->tf;
 	uint64_t tf = (uint64_t) &th->tf;
+	
 	ASSERT (intr_get_level () == INTR_OFF);
 
 	/* The main switching logic.
@@ -633,11 +654,6 @@ do_schedule(int status) {
 	while (!list_empty (&destruction_req)) {
 		struct thread *victim =
 			list_entry (list_pop_front (&destruction_req), struct thread, elem);
-		
-		// /* free file descriptor table */
-		// for (int i = 0; i < 64; i++)
-		// 	free(victim->fdt[i]);
-		// free(victim->fdt);
 
 		palloc_free_page (victim);
 	}

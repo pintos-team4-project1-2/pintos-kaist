@@ -19,7 +19,7 @@ struct lock filesys_lock;
 
 void syscall_entry (void);
 void check_address (void *addr);
-void syscall_handler (struct intr_frame *);
+void syscall_handler (struct intr_frame *f UNUSED);
 void halt(void);
 void exit(int status);
 bool create (const char *file, unsigned initial_size);
@@ -67,7 +67,7 @@ syscall_init (void) {
 /* added */
 void 
 check_address (void *addr) {
-	if (is_kernel_vaddr(addr) || pml4_get_page(thread_current ()->pml4, addr) == NULL)
+	if (addr == NULL || is_kernel_vaddr(addr) || pml4_get_page(thread_current ()->pml4, addr) == NULL)
 		exit(-1);
 }
 
@@ -77,18 +77,6 @@ check_address (void *addr) {
 void
 syscall_handler (struct intr_frame *f UNUSED) {
 	// TODO: Your implementation goes here.
-	
-	if (!is_user_vaddr(f->rsp))
-		return;
-
-	// uint64_t sys_num = f->R.rax;
-	// uint64_t arg1 = f->R.rdi;
-	// uint64_t arg2 = f->R.rsi;
-	// uint64_t arg3 = f->R.rdx;
-	// uint64_t arg4 = f->R.r10;
-	// uint64_t arg5 = f->R.r8;
-	// uint64_t arg6 = f->R.r9;
-
 	// printf ("system call!\n");
 	switch (f->R.rax) {
 		case 0:
@@ -145,16 +133,13 @@ void halt(void) {
 }
 
 void exit(int status){
-	struct thread *curr = thread_current ();
-	// printf("curr exit_code pa_tid %d %d\n", curr->exit_code, curr->parent_tid);
-	curr->exit_code = status;
-	printf("%s: exit(%d)\n", curr->name, curr->exit_code);
+	struct thread *current = thread_current ();
+	current->exit_code = status;
+	printf("%s: exit(%d)\n", current->name, current->exit_code);
 	thread_exit ();
 }
 
 bool create (const char *file, unsigned initial_size) {
-	// if (file == NULL)
-	// 	exit(-1);
 	check_address(file);
 	return filesys_create (file, initial_size);
 }
@@ -166,91 +151,137 @@ bool remove (const char *file){
 
 int open (const char *file) {
 	check_address(file);
-	lock_acquire (&filesys_lock);
-	struct thread *curr = thread_current ();
+	// struct thread *current = thread_current ();
+	// int i;
+
+	// if (current->next_fd < FILE_NUM) {
+	// 	lock_acquire (&filesys_lock);
+	// 	struct file *new_file = filesys_open (file);
+
+	// 	if (new_file != NULL) {
+	// 		current->fdt[current->next_fd] = new_file;
+	// 		lock_release (&filesys_lock);
+	// 		return current->next_fd++;
+	// 	}
+	// 	lock_release (&filesys_lock);
+	// }
+
 	int i;
 
-	if (file != NULL && curr->next_fd < FILE_NUM) {
-		struct file *new_file = filesys_open (file);
-		if (new_file != NULL) {
-			curr->fdt[curr->next_fd] = new_file;
-			lock_release (&filesys_lock);
-			return curr->next_fd++;
-		}
+	lock_acquire(&filesys_lock);
+	struct file *ofile = filesys_open (file);
+	struct thread *current = thread_current ();
+
+	if (ofile == NULL) {
+		lock_release(&filesys_lock);
+		return -1;
 	}
 
-	lock_release (&filesys_lock);
+	for (i = 3; i < FILE_NUM; i++) {
+		if (current->fdt[i] == NULL) {
+			current->fdt[i] = ofile;
+			lock_release(&filesys_lock);
+			current->next_fd = i;
+			return current->next_fd;
+		}
+	}
+	lock_release(&filesys_lock);
+
 	return -1;
 }
 
 void close (int fd) {
-	process_close_file(fd);
+	struct file *ofile = thread_current ()->fdt[fd];
+	if (ofile != NULL && fd >= 3) {
+		file_close (ofile);
+		thread_current ()->fdt[fd] = NULL;
+	}
 }
 
 int file_size (int fd) {
-	struct thread *curr = thread_current ();
-	off_t file_size = file_length (curr->fdt[fd]);
+	struct file *ofile = thread_current ()->fdt[fd];
+	
+	if (ofile == NULL)
+		return 0;
 
-	if (file_size == 0 || file_size == NULL) {
-		return -1;
-	}
-
-	return file_size;
+	return file_length (ofile);
 }
 
 int read (int fd, void *buffer, unsigned length) {
 	check_address(buffer);
-	struct thread *curr = thread_current ();
 	int bytes_read;
 
 	if (fd == 0) {
-		bytes_read = input_getc ();
-		return bytes_read;
-	}
-	else if (fd >= 2) {
 		lock_acquire (&filesys_lock);
-		bytes_read = file_read (curr->fdt[fd], buffer, length);
+		bytes_read = input_getc ();
 		lock_release (&filesys_lock);
 
 		return bytes_read;
 	}
+	else if (fd >= 2) {
+		lock_acquire (&filesys_lock);
+		struct file *ofile = thread_current ()->fdt[fd];
+		if (ofile != NULL) {
+			bytes_read = file_read (ofile, buffer, length);
+			lock_release (&filesys_lock);
+
+			return bytes_read;
+		}
+		lock_release (&filesys_lock);
+	}
+
 	return -1;
 }
 
 int write (int fd, const void *buffer, unsigned length) {
 	check_address(buffer);
+
 	if (fd == 1){
+		lock_acquire(&filesys_lock);
 		putbuf (buffer, length);
+		lock_release(&filesys_lock);
+
 		return sizeof(buffer);
 	} 
-	else if (fd > 1) {
+	else if (fd > 2) {
 		lock_acquire(&filesys_lock);
-		int bytes_written = file_write (thread_current ()->fdt[fd], buffer, length);
+		struct file *ofile = thread_current ()->fdt[fd];
+		if (ofile != NULL) {
+			int bytes_written = file_write (ofile, buffer, length);
+			lock_release(&filesys_lock);
+
+			return bytes_written;
+		}
+
 		lock_release(&filesys_lock);
-		return bytes_written;
 	}
+
 	return -1;
 }
 
 
 void seek (int fd, unsigned position) {
-	return file_seek (thread_current ()->fdt[fd], position);
+	struct file *ofile = thread_current ()->fdt[fd];
+	if (ofile != NULL)
+		return file_seek (ofile, position);
 }
 
 
 unsigned tell (int fd) {
-	return file_tell (thread_current ()->fdt[fd]);
+	struct file *ofile = thread_current ()->fdt[fd];
+	if (ofile != NULL)
+		return file_tell (ofile);
 }
 
 
 pid_t fork (const char *thread_name, struct intr_frame *f) {
-	int pid = process_fork (thread_name, f);
-	return pid;
+	check_address (thread_name);
+	return process_fork (thread_name, f);
 }
 
 
 int exec (const char *file) {
-	check_address(file);
+	check_address (file);
 	struct thread *curr = thread_current ();
 	if (process_exec(file) == -1){
 		return -1;
