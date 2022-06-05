@@ -138,7 +138,7 @@ struct  thread {
 	struct list child_list;
 	struct list_elem c_elem;
 
-	tid_t parent_tid;	
+	tid_t parent_tid;
 
 	int exit_code;
 };

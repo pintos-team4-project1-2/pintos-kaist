@@ -67,10 +67,7 @@ syscall_init (void) {
 /* added */
 void 
 check_address (void *addr) {
-	if (is_kernel_vaddr(addr))
-		exit(-1);
-	
-	if (pml4_get_page(NULL, addr) == NULL)
+	if (is_kernel_vaddr(addr) || pml4_get_page(thread_current ()->pml4, addr) == NULL)
 		exit(-1);
 }
 
@@ -149,6 +146,7 @@ void halt(void) {
 
 void exit(int status){
 	struct thread *curr = thread_current ();
+	// printf("curr exit_code pa_tid %d %d\n", curr->exit_code, curr->parent_tid);
 	curr->exit_code = status;
 	printf("%s: exit(%d)\n", curr->name, curr->exit_code);
 	thread_exit ();
@@ -162,10 +160,12 @@ bool create (const char *file, unsigned initial_size) {
 }
 
 bool remove (const char *file){
+	check_address(file);
 	return filesys_remove (file);
 }
 
 int open (const char *file) {
+	check_address(file);
 	lock_acquire (&filesys_lock);
 	struct thread *curr = thread_current ();
 	int i;
@@ -175,7 +175,7 @@ int open (const char *file) {
 		if (new_file != NULL) {
 			curr->fdt[curr->next_fd] = new_file;
 			lock_release (&filesys_lock);
-			return curr->next_fd++;	
+			return curr->next_fd++;
 		}
 	}
 
@@ -199,6 +199,7 @@ int file_size (int fd) {
 }
 
 int read (int fd, void *buffer, unsigned length) {
+	check_address(buffer);
 	struct thread *curr = thread_current ();
 	int bytes_read;
 
@@ -217,20 +218,16 @@ int read (int fd, void *buffer, unsigned length) {
 }
 
 int write (int fd, const void *buffer, unsigned length) {
-	// if (!(is_user_vaddr))
+	check_address(buffer);
 	if (fd == 1){
-		// lock_acquire(&filesys_lock);
 		putbuf (buffer, length);
-		// lock_release(&filesys_lock);
 		return sizeof(buffer);
-		// return sizeof(buffer) > length ? sizeof(buffer) : length;
 	} 
 	else if (fd > 1) {
 		lock_acquire(&filesys_lock);
 		int bytes_written = file_write (thread_current ()->fdt[fd], buffer, length);
 		lock_release(&filesys_lock);
 		return bytes_written;
-		// return bytes_written > length ? bytes_written : length;
 	}
 	return -1;
 }
@@ -253,8 +250,8 @@ pid_t fork (const char *thread_name, struct intr_frame *f) {
 
 
 int exec (const char *file) {
+	check_address(file);
 	struct thread *curr = thread_current ();
-
 	if (process_exec(file) == -1){
 		return -1;
 	}
@@ -262,6 +259,5 @@ int exec (const char *file) {
 }
 
 int wait (pid_t pid) {
-	// printf("pid %d %p\n", pid, &pid);
 	return process_wait (pid);
 }

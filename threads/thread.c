@@ -206,7 +206,7 @@ thread_create (const char *name, int priority,
 	struct thread *t;
 	tid_t tid;
 	struct file *file;
-	struct thread *curr = thread_current ();
+	struct thread *current = thread_current ();
 	
 	ASSERT (function != NULL);
 	/* Allocate one page(4KB) to thread. */
@@ -228,24 +228,25 @@ thread_create (const char *name, int priority,
 	t->tf.ss = SEL_KDSEG;
 	t->tf.cs = SEL_KCSEG;
 	t->tf.eflags = FLAG_IF;
-
-	t->next_fd = 2;
-
-	t->parent_tid = curr->tid;
 	
 	sema_init(&t->wait_sema, 0);
 	sema_init(&t->fork_sema, 0);
 	sema_init(&t->exit_sema, 0);
 
+	memset (t->fdt, 0, FILE_NUM);
+	t->next_fd = 3;
+
+	t->parent_tid = current->tid;
+
 	t->exit_code = 0;
 
 	if (function != idle)
-		list_push_back(&curr->child_list, &t->c_elem);
+		list_push_back(&current->child_list, &t->c_elem);
 
 	/* Add to run queue. */
 	thread_unblock (t);
 
-	if (curr->priority < priority)
+	if (current->priority < priority)
 		thread_yield ();
 		
 	return tid;

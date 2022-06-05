@@ -222,7 +222,7 @@ process_exec (void *f_name) {
 	success = load (arg[0], &_if);
 
 	/* If load failed, quit. */
-	// palloc_free_page (file_name);
+	palloc_free_page (file_name);
 	if (!success)
 		return -1;
 
@@ -249,26 +249,28 @@ process_wait (tid_t child_tid) {
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
-	struct thread *child_t = get_child_process(child_tid);
-	int child_exit_code;
+	// struct thread *child_t = get_child_process(child_tid);
+	// printf("curr id %d child id %d\n", thread_tid (), child_t->tid);
 
-	if (child_t == NULL)
-		return -1;
+	// int child_exit_code;
 
-	sema_down (&child_t->wait_sema);
+	// if (child_t == NULL)
+	// 	return -1;
+
+	// sema_down (&child_t->wait_sema);
 	
-	child_exit_code = child_t->exit_code;
+	// child_exit_code = child_t->exit_code;
 
-	list_remove (&child_t->c_elem);
+	// list_remove (&child_t->c_elem);
 
-	// sema_up (&child_t->exit_sema);
-	return child_exit_code;
+	// // sema_up (&child_t->exit_sema);
+	// return child_exit_code;
 
-	// int i = 100000000 - 1000000*timer_ticks ();
-	// while (i > 0) {
-	// 	i--;
-	// }
-	// return  -1;
+	int i = 100000000 - 1000000*timer_ticks ();
+	while (i > 0) {
+		i--;
+	}
+	return  -1;
 
 
 	// struct thread *child_t = get_child_process(child_tid);
@@ -289,18 +291,20 @@ process_exit (void) {
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
 	 * TODO: We recommend you to implement process resource cleanup here. */
+	struct thread *current = thread_current ();
 	int i;
-
-	for (i = 2; i < 64; i++) {
-		process_close_file(i);
+	for (i = 0; i < FILE_NUM; i++) {
+		if (i >= 3) {
+			file_close (current->fdt[i]);
+			current->fdt[i] = NULL;
+		}
 	}
 
-	// file_close (thread_current ()->run_file);
-	process_cleanup ();
-	// sema_up이 위에 있으면 exec_read 가끔 FAIL.
-	sema_up(&thread_current ()->wait_sema);
-	sema_down(&thread_current()->exit_sema);
-
+	// // file_close (thread_current ()->run_file);
+	// process_cleanup ();
+	// // sema_up이 위에 있으면 exec_read 가끔 FAIL.
+	// sema_up (&thread_current ()->wait_sema);
+	// // sema_down (&thread_current ()->exit_sema);
 }
 
 /* Free the current process's resources. */
@@ -729,25 +733,22 @@ setup_stack (struct intr_frame *if_) {
 static void 
 argument_stack(char **arg, int count, struct intr_frame *if_) {
 	int i;
-	// printf("rsp arg addr %p\n", if_->rsp);
+
 	for (i = count-1; i > -1; i--) {
 		if_->rsp -= (strlen(arg[i])+1);
 		memcpy(if_->rsp, arg[i], strlen(arg[i])+1);
 		arg[i] = if_->rsp;
-		// printf("rsp arg addr %p %p %s\n", &arg[i], if_->rsp, if_->rsp);
 	}
 
+	memset(if_->rsp&~7, 0, if_->rsp - (if_->rsp&~7));
 	if_->rsp &= ~7;
 
 	if_->rsp -= 8;
-	memset(if_->rsp, 0, sizeof(uint8_t));
-
-	if_->rsp -= 8;
-	memset(if_->rsp, 0, sizeof(char *));
+	memset(if_->rsp, 0, 8);
 
 	for (i = count-1; i > -1; i--) {
 		if_->rsp -= 8;
-		memcpy (if_->rsp, &arg[i], sizeof(char *));
+		memcpy (if_->rsp, &arg[i], 8);
 	}
 	
 	if_->R.rdi = count;
@@ -755,7 +756,7 @@ argument_stack(char **arg, int count, struct intr_frame *if_) {
 
 	/* return address */
 	if_->rsp -= 8;
-	memset(if_->rsp, 0, sizeof(void(*) ()));
+	memset(if_->rsp, 0, 8);
 }
 
 
@@ -769,16 +770,12 @@ int process_add_file (struct file *f) {
 
 
 void process_close_file (int fd) {
-	struct thread *curr = thread_current ();
-	if (fd >= 2) {
-		file_close (curr->fdt[fd]);
-		curr->fdt[fd] = NULL;
-	}
+
 }
 
 
 struct file *process_get_file (int fd) {
-	if (fd >= 2)
+	if (fd >= 3)
 		return thread_current ()->fdt[fd];
 }
 

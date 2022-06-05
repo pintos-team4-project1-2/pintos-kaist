@@ -19,7 +19,7 @@ cd ./build
 
 # PASS!
 # pintos -- -q   run priority-donate-one
-pintos -v -k -T 60 -m 20 --fs-disk=10 -p tests/userprog/args-single:args-single -- -q -f run 'args-single onearg'
+# pintos --fs-disk=10 -p tests/userprog/args-single:args-single -- -q -f run 'args-single onearg'
 # pintos --fs-disk=10 -p tests/userprog/echo -- -q -f run 'echo x'
 # pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/exec-once:exec-once -p tests/userprog/child-simple:child-simple -- -q   -f run exec-once
 # pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/exec-arg:exec-arg -p tests/userprog/child-args:child-args -- -q   -f run exec-arg

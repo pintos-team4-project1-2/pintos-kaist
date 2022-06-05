@@ -1,0 +1,36 @@
+Kernel command line: -q -f put fork-multiple run fork-multiple
+0 ~ 9fc00 1
+100000 ~ 13e0000 1
+Pintos booting with: 
+	base_mem: 0x0 ~ 0x9fc00 (Usable: 639 kB)
+	ext_mem: 0x100000 ~ 0x13e0000 (Usable: 19,328 kB)
+Calibrating timer...  157,081,600 loops/s.
+hd0:0: detected 321 sector (160 kB) disk, model "QEMU HARDDISK", serial "QM00001"
+hd0:1: detected 20,160 sector (9 MB) disk, model "QEMU HARDDISK", serial "QM00002"
+hd1:0: detected 104 sector (52 kB) disk, model "QEMU HARDDISK", serial "QM00003"
+Formatting file system...done.
+Boot complete.
+Putting 'fork-multiple' into the file system...
+Executing 'fork-multiple':
+(fork-multiple) begin
+Page fault at 0x648: not present error reading page in kernel context.
+Interrupt 0x0e (#PF Page-Fault Exception) at rip=800420a735
+ cr2=0000000000000648 error=               0
+rax 0000000000000648 rbx 0000000000000000 rcx 000000800423f020 rdx 000000800423f6b8
+rsp 0000008004240e80 rbp 0000008004240ea0 rsi 000000800423f020 rdi 0000000000000648
+rip 000000800420a735 r8 0000000000000000  r9 0000000000000000 r10 0000000000000000
+r11 0000000000000216 r12 000000800421d603 r13 0000000000000000 r14 0000000000000000
+r15 0000000000000000 rflags 00000002
+es: 001b ds: 001b cs: 0008 ss: 0010
+Kernel PANIC at ../../userprog/exception.c:97 in kill(): Kernel bug - unexpected interrupt in kernel
+Call stack: 0x80042186d7 0x800421d2da 0x800421d459 0x80042096df 0x8004209afd 0x800421be41 0x800421dd02 0x800421d6a1 0x800421d4ce 0x400121 0x4001a7 0x400229 0x400cca.
+The `backtrace' program can make call stacks useful.
+Read "Backtraces" in the "Debugging Tools" chapter
+of the Pintos documentation for more information.
+Timer: 70 ticks
+Thread: 30 idle ticks, 35 kernel ticks, 5 user ticks
+hd0:0: 0 reads, 0 writes
+hd0:1: 87 reads, 236 writes
+hd1:0: 104 reads, 0 writes
+Console: 1795 characters output
+Key
