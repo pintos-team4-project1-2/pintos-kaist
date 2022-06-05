@@ -295,7 +295,7 @@ process_exit (void) {
 		process_close_file(i);
 	}
 
-	file_close (thread_current ()->run_file);
+	// file_close (thread_current ()->run_file);
 	process_cleanup ();
 	// sema_up이 위에 있으면 exec_read 가끔 FAIL.
 	sema_up(&thread_current ()->wait_sema);
@@ -505,8 +505,6 @@ load (const char *file_name, struct intr_frame *if_) {
 	/* TODO: Your code goes here.
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
 	
-	// strlcpy(t->name, file_name, sizeof t->name);
-
 	success = true;
 
 done:
@@ -760,22 +758,13 @@ argument_stack(char **arg, int count, struct intr_frame *if_) {
 	memset(if_->rsp, 0, sizeof(void(*) ()));
 }
 
-/* added */
-void check_address (void *addr) {
-	if (is_kernel_vaddr(addr))
-		exit(-1);
-	
-	if (pml4_get_page(NULL, addr) == NULL)
-		exit(-1);
-}
-
 
 int process_add_file (struct file *f) {
 	struct thread *curr = thread_current ();
 
-	curr->fdt[curr->next_fd++] = f;
+	curr->fdt[curr->next_fd] = f;
 
-	return curr->next_fd-1;
+	return curr->next_fd++;
 }
 
 
@@ -789,12 +778,8 @@ void process_close_file (int fd) {
 
 
 struct file *process_get_file (int fd) {
-	struct thread *curr = thread_current ();
-	int i;
-
-	for (i = 2; i < 64; i++) {
-		if (i == fd) {
-			return curr->fdt[i];
-		}
-	}
+	if (fd >= 2)
+		return thread_current ()->fdt[fd];
 }
+
+

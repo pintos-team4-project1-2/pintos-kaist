@@ -229,19 +229,17 @@ thread_create (const char *name, int priority,
 	t->tf.cs = SEL_KCSEG;
 	t->tf.eflags = FLAG_IF;
 
-	t->fdt = (struct file **) calloc(64, (sizeof file));
 	t->next_fd = 2;
 
 	t->parent_tid = curr->tid;
-	t->child_flag = true;
-	t->exit_code = 0;
-	t->exit_status = false;
+	
 	sema_init(&t->wait_sema, 0);
 	sema_init(&t->fork_sema, 0);
 	sema_init(&t->exit_sema, 0);
 
+	t->exit_code = 0;
 
-	if (t != idle_thread)
+	if (function != idle)
 		list_push_back(&curr->child_list, &t->c_elem);
 
 	/* Add to run queue. */

@@ -14,6 +14,8 @@
 #define RECENT_CPU_DEFAULT 0
 #define LOAD_AVG_DEFAULT 0
 
+#define FILE_NUM 128
+
 
 /* States in a thread's life cycle. */
 enum thread_status {
@@ -121,21 +123,13 @@ struct  thread {
 	struct lock *wait_on_lock;
 	struct list donations;
 	struct list_elem d_elem;
-
-	struct file *run_file;
 	
-
 	int nice;
 	int recent_cpu;
 
-	// 20220530
-	int exit_code;
-
-	struct file **fdt;
+	struct file *fdt[FILE_NUM];
+	struct file *run_file;
 	int next_fd;
-
-	
-	bool exit_status;
 
 	struct semaphore wait_sema;
 	struct semaphore fork_sema;
@@ -143,9 +137,10 @@ struct  thread {
 	
 	struct list child_list;
 	struct list_elem c_elem;
-	bool child_flag;
+
 	tid_t parent_tid;	
 
+	int exit_code;
 };
 
 /* If false (default), use round-robin scheduler.

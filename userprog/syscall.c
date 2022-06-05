@@ -18,6 +18,7 @@ typedef int pid_t;
 struct lock filesys_lock;
 
 void syscall_entry (void);
+void check_address (void *addr);
 void syscall_handler (struct intr_frame *);
 void halt(void);
 void exit(int status);
@@ -63,6 +64,16 @@ syscall_init (void) {
 	lock_init(&filesys_lock);
 }
 
+/* added */
+void 
+check_address (void *addr) {
+	if (is_kernel_vaddr(addr))
+		exit(-1);
+	
+	if (pml4_get_page(NULL, addr) == NULL)
+		exit(-1);
+}
+
 /* The main system call interface */
 /* The x86-64 convention for function return values is to place them in the RAX register. 
  * System calls that return a value can do so by modifying the rax member of struct intr_frame. */
@@ -73,57 +84,57 @@ syscall_handler (struct intr_frame *f UNUSED) {
 	if (!is_user_vaddr(f->rsp))
 		return;
 
-	uint64_t sys_num = f->R.rax;
-	uint64_t arg1 = f->R.rdi;
-	uint64_t arg2 = f->R.rsi;
-	uint64_t arg3 = f->R.rdx;
-	uint64_t arg4 = f->R.r10;
-	uint64_t arg5 = f->R.r8;
-	uint64_t arg6 = f->R.r9;
+	// uint64_t sys_num = f->R.rax;
+	// uint64_t arg1 = f->R.rdi;
+	// uint64_t arg2 = f->R.rsi;
+	// uint64_t arg3 = f->R.rdx;
+	// uint64_t arg4 = f->R.r10;
+	// uint64_t arg5 = f->R.r8;
+	// uint64_t arg6 = f->R.r9;
 
 	// printf ("system call!\n");
-	switch (sys_num) {
+	switch (f->R.rax) {
 		case 0:
 			halt ();
 			break;
 		case 1:
-			exit (arg1);
+			exit (f->R.rdi);
 			break;
 		case 2:
-			f->R.rax = fork (arg1, f);
+			f->R.rax = fork (f->R.rdi, f);
 			break;
 		case 3:
-			f->R.rax = exec (arg1);
+			f->R.rax = exec (f->R.rdi);
 			break;
 		case 4:
-			f->R.rax = wait (arg1);
+			f->R.rax = wait (f->R.rdi);
 			break;
 		case 5:
-			f->R.rax = create (arg1, arg2);
+			f->R.rax = create (f->R.rdi, f->R.rsi);
 			break;
 		case 6:
-			f->R.rax = remove (arg1);
+			f->R.rax = remove (f->R.rdi);
 			break;
 		case 7:
-			f->R.rax = open (arg1);
+			f->R.rax = open (f->R.rdi);
 			break;
 		case 8:
-			f->R.rax = file_size (arg1);
+			f->R.rax = file_size (f->R.rdi);
 			break;
 		case 9:
-			f->R.rax = read (arg1, arg2, arg3);
+			f->R.rax = read (f->R.rdi, f->R.rsi, f->R.rdx);
 			break;
 		case 10:
-			f->R.rax = write (arg1, arg2, arg3);
+			f->R.rax = write (f->R.rdi, f->R.rsi, f->R.rdx);
 			break;
 		case 11:
-			seek (arg1, arg2);
+			seek (f->R.rdi, f->R.rsi);
 			break;
 		case 12:
-			f->R.rax = tell (arg1);
+			f->R.rax = tell (f->R.rdi);
 			break;
 		case 13:
-			close (arg1);
+			close (f->R.rdi);
 			break;
 		default:
 			thread_exit ();
@@ -144,8 +155,9 @@ void exit(int status){
 }
 
 bool create (const char *file, unsigned initial_size) {
-	if (file == NULL)
-		exit(-1);
+	// if (file == NULL)
+	// 	exit(-1);
+	check_address(file);
 	return filesys_create (file, initial_size);
 }
 
@@ -158,7 +170,7 @@ int open (const char *file) {
 	struct thread *curr = thread_current ();
 	int i;
 
-	if (file != NULL && curr->next_fd < 64) {
+	if (file != NULL && curr->next_fd < FILE_NUM) {
 		struct file *new_file = filesys_open (file);
 		if (new_file != NULL) {
 			curr->fdt[curr->next_fd] = new_file;
