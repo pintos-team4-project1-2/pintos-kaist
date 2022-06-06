@@ -4,37 +4,17 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "threads/loader.h"
-#include "threads/synch.h"
 #include "userprog/gdt.h"
-#include "userprog/process.h"
 #include "threads/flags.h"
 #include "intrinsic.h"
+
+// * USERPROG 추가
+#include "threads/palloc.h"
 #include "filesys/filesys.h"
 #include "filesys/file.h"
-#include <console.h>
-
-typedef int pid_t;
-
-struct lock filesys_lock;
 
 void syscall_entry (void);
-void check_address (void *addr);
-void syscall_handler (struct intr_frame *f UNUSED);
-void halt(void);
-void exit(int status);
-bool create (const char *file, unsigned initial_size);
-bool remove (const char *file);
-pid_t fork (const char *thread_name, struct intr_frame *f);
-int exec (const char *file);
-int wait (pid_t pid);
-int open (const char *file);
-int file_size (int fd);
-int read (int fd, void *buffer, unsigned length);
-int write (int fd, const void *buffer, unsigned length);
-void seek (int fd, unsigned position);
-unsigned tell (int fd);
-void close (int fd);
-
+void syscall_handler (struct intr_frame *);
 
 /* System call.
  *
@@ -49,8 +29,18 @@ void close (int fd);
 #define MSR_LSTAR 0xc0000082        /* Long mode SYSCALL target */
 #define MSR_SYSCALL_MASK 0xc0000084 /* Mask for the eflags */
 
+
+void check_address(void *addr) {
+  struct thread *cur = thread_current();
+  if (addr == NULL || is_kernel_vaddr(addr) || pml4_get_page(cur->pml4, addr) == NULL)
+    exit(-1);
+}
+
 void
 syscall_init (void) {
+
+  lock_init(&filesys_lock);
+
 	write_msr(MSR_STAR, ((uint64_t)SEL_UCSEG - 0x10) << 48  |
 			((uint64_t)SEL_KCSEG) << 32);
 	write_msr(MSR_LSTAR, (uint64_t) syscall_entry);
@@ -60,176 +50,208 @@ syscall_init (void) {
 	 * mode stack. Therefore, we masked the FLAG_FL. */
 	write_msr(MSR_SYSCALL_MASK,
 			FLAG_IF | FLAG_TF | FLAG_DF | FLAG_IOPL | FLAG_AC | FLAG_NT);
-	
-	lock_init(&filesys_lock);
-}
-
-/* added */
-void 
-check_address (void *addr) {
-	if (addr == NULL || is_kernel_vaddr(addr) || pml4_get_page(thread_current ()->pml4, addr) == NULL)
-		exit(-1);
 }
 
 /* The main system call interface */
-/* The x86-64 convention for function return values is to place them in the RAX register. 
- * System calls that return a value can do so by modifying the rax member of struct intr_frame. */
+// void
+// syscall_handler (struct intr_frame *f UNUSED) {
+// 	// TODO: Your implementation goes here.
+  
+//   switch (f->R.rax) {
+//     case SYS_HALT:
+//       halt();
+//       break;
+//     case SYS_EXIT:
+//       exit(f->R.rdi);
+//       break;
+//     case SYS_FORK:
+//       memcpy(&thread_current()->ptf, f, sizeof(struct intr_frame));
+//       f->R.rax = (uint64_t)fork(f->R.rdi);
+//       break;
+//     case SYS_CREATE:
+//       f->R.rax = (uint64_t)create(f->R.rdi, f->R.rsi);
+//       break;
+//     case SYS_REMOVE:
+//       f->R.rax = (uint64_t)remove(f->R.rdi);
+//       break;
+//     case SYS_OPEN:
+//       f->R.rax = (uint64_t)open(f->R.rdi);
+//       break;
+//     case SYS_FILESIZE:
+//       f->R.rax = (uint64_t)filesize(f->R.rdi);
+//       break;
+//     case SYS_READ:
+//       f->R.rax = (uint64_t)read(f->R.rdi, f->R.rsi, f->R.rdx);
+//       break;  
+//     case SYS_WRITE:      
+//       f->R.rax = (uint64_t)write(f->R.rdi, f->R.rsi, f->R.rdx);
+//       break;
+//     case SYS_EXEC:
+//       exec(f->R.rdi);
+//       break;
+//     case SYS_WAIT:
+//       f->R.rax = (uint64_t)wait(f->R.rdi);
+//       break; 
+//     case SYS_SEEK:
+//       seek(f->R.rdi, f->R.rsi);
+//       break;
+//     case SYS_TELL:
+//       f->R.rax = (uint64_t)tell(f->R.rdi);
+//       break;
+//     case SYS_CLOSE:
+//       close(f->R.rdi);
+//       break;
+//     default:
+//       exit(-1);
+//       break;
+//   }
+// }
+
 void
 syscall_handler (struct intr_frame *f UNUSED) {
 	// TODO: Your implementation goes here.
-	// printf ("system call!\n");
-	switch (f->R.rax) {
-		case 0:
-			halt ();
-			break;
-		case 1:
-			exit (f->R.rdi);
-			break;
-		case 2:
-			f->R.rax = fork (f->R.rdi, f);
-			break;
-		case 3:
-			f->R.rax = exec (f->R.rdi);
-			break;
-		case 4:
-			f->R.rax = wait (f->R.rdi);
-			break;
-		case 5:
-			f->R.rax = create (f->R.rdi, f->R.rsi);
-			break;
-		case 6:
-			f->R.rax = remove (f->R.rdi);
-			break;
-		case 7:
-			f->R.rax = open (f->R.rdi);
-			break;
-		case 8:
-			f->R.rax = file_size (f->R.rdi);
-			break;
-		case 9:
-			f->R.rax = read (f->R.rdi, f->R.rsi, f->R.rdx);
-			break;
-		case 10:
-			f->R.rax = write (f->R.rdi, f->R.rsi, f->R.rdx);
-			break;
-		case 11:
-			seek (f->R.rdi, f->R.rsi);
-			break;
-		case 12:
-			f->R.rax = tell (f->R.rdi);
-			break;
-		case 13:
-			close (f->R.rdi);
-			break;
-		default:
-			thread_exit ();
-			break;
-	}
+  
+  switch (f->R.rax) {
+    case SYS_HALT:
+      halt();
+      break;
+    case SYS_EXIT:
+      exit(f->R.rdi);
+      break;
+    case SYS_FORK:
+      memcpy(&thread_current()->temp_tf, f, sizeof(struct intr_frame));
+      f->R.rax = fork(f->R.rdi);
+      break;
+    case SYS_CREATE:
+      f->R.rax = create(f->R.rdi, f->R.rsi);
+      break;
+    case SYS_REMOVE:
+      f->R.rax = remove(f->R.rdi);
+      break;
+    case SYS_OPEN:
+      f->R.rax = open(f->R.rdi);
+      break;
+    case SYS_FILESIZE:
+      f->R.rax = filesize(f->R.rdi);
+      break;
+    case SYS_READ:
+      f->R.rax = read(f->R.rdi, f->R.rsi, f->R.rdx);
+      break;  
+    case SYS_WRITE:      
+      f->R.rax = write(f->R.rdi, f->R.rsi, f->R.rdx);
+      break;
+    case SYS_EXEC:
+      exec(f->R.rdi);
+      break;
+    case SYS_WAIT:
+      f->R.rax = wait(f->R.rdi);
+      break; 
+    case SYS_SEEK:
+      seek(f->R.rdi, f->R.rsi);
+      break;
+    case SYS_TELL:
+      f->R.rax = tell(f->R.rdi);
+      break;
+    case SYS_CLOSE:
+      close(f->R.rdi);
+      break;
+    default:
+      exit(-1);
+      break;
+  }
 }
-
 
 void halt(void) {
-	power_off ();
+  power_off();
 }
 
-void exit(int status){
-	struct thread *current = thread_current ();
-	current->exit_code = status;
-	printf("%s: exit(%d)\n", current->name, current->exit_code);
-	thread_exit ();
+void exit(int status) {
+  struct thread *cur = thread_current();
+  cur->exit_code = status;
+  printf("%s: exit(%d)\n", cur->name, status);
+  thread_exit();
+}
+
+int fork (const char *thread_name) {
+  check_address(thread_name);
+  return process_fork(thread_name, &thread_current()->temp_tf);
+}
+
+int exec (const char *file) {
+  check_address(file);
+
+  char *fn_copy = palloc_get_page(PAL_ZERO);
+  if (!fn_copy) {
+    exit(-1);
+  }
+  strlcpy(fn_copy, file, strlen (file)+1);
+  if (process_exec(fn_copy) == -1) {
+    exit(-1);
+    return -1;
+  }
+}
+
+int wait (tid_t pid) {
+  return process_wait(pid);
 }
 
 bool create (const char *file, unsigned initial_size) {
-	check_address(file);
-	return filesys_create (file, initial_size);
+  check_address(file);
+  return filesys_create(file, initial_size);
 }
 
-bool remove (const char *file){
-	check_address(file);
-	return filesys_remove (file);
+bool remove (const char *file) {
+  check_address(file);
+  return filesys_remove(file);
 }
+
 
 int open (const char *file) {
 	check_address(file);
-	// struct thread *current = thread_current ();
-	// int i;
-
-	// if (current->next_fd < FILE_NUM) {
-	// 	lock_acquire (&filesys_lock);
-	// 	struct file *new_file = filesys_open (file);
-
-	// 	if (new_file != NULL) {
-	// 		current->fdt[current->next_fd] = new_file;
-	// 		lock_release (&filesys_lock);
-	// 		return current->next_fd++;
-	// 	}
-	// 	lock_release (&filesys_lock);
-	// }
-
+	struct thread *current = thread_current ();
 	int i;
 
-	lock_acquire(&filesys_lock);
-	struct file *ofile = filesys_open (file);
-	struct thread *current = thread_current ();
+	if (current->next_fd < 128) {
+		lock_acquire (&filesys_lock);
+		struct file *new_file = filesys_open (file);
 
-	if (ofile == NULL) {
-		lock_release(&filesys_lock);
-		return -1;
-	}
-
-	for (i = 3; i < FILE_NUM; i++) {
-		if (current->fdt[i] == NULL) {
-			current->fdt[i] = ofile;
-			lock_release(&filesys_lock);
-			current->next_fd = i;
-			return current->next_fd;
+		if (new_file != NULL) {
+			current->fdt[current->next_fd] = new_file;
+			lock_release (&filesys_lock);
+			return current->next_fd++;
 		}
+		lock_release (&filesys_lock);
 	}
-	lock_release(&filesys_lock);
-
-	return -1;
+  return -1;
 }
 
-void close (int fd) {
-	struct file *ofile = thread_current ()->fdt[fd];
-	if (ofile != NULL && fd >= 3) {
-		file_close (ofile);
-		thread_current ()->fdt[fd] = NULL;
-	}
+
+int filesize (int fd) {
+  struct file *file = thread_current()->fdt[fd];
+  if (file == NULL)
+    return -1;
+  return file_length(file);
 }
 
-int file_size (int fd) {
-	struct file *ofile = thread_current ()->fdt[fd];
-	
-	if (ofile == NULL)
-		return 0;
-
-	return file_length (ofile);
-}
 
 int read (int fd, void *buffer, unsigned length) {
-	check_address(buffer);
+  check_address (buffer);
+	struct thread *curr = thread_current ();
 	int bytes_read;
 
 	if (fd == 0) {
-		lock_acquire (&filesys_lock);
+    lock_acquire (&filesys_lock);
 		bytes_read = input_getc ();
-		lock_release (&filesys_lock);
-
+    lock_release (&filesys_lock);
 		return bytes_read;
 	}
 	else if (fd >= 2) {
 		lock_acquire (&filesys_lock);
-		struct file *ofile = thread_current ()->fdt[fd];
-		if (ofile != NULL) {
-			bytes_read = file_read (ofile, buffer, length);
-			lock_release (&filesys_lock);
-
-			return bytes_read;
-		}
+		bytes_read = file_read (curr->fdt[fd], buffer, length);
 		lock_release (&filesys_lock);
-	}
 
+		return bytes_read;
+	}
 	return -1;
 }
 
@@ -241,13 +263,15 @@ int write (int fd, const void *buffer, unsigned length) {
 		putbuf (buffer, length);
 		lock_release(&filesys_lock);
 
-		return sizeof(buffer);
+		return length;
 	} 
-	else if (fd > 2) {
+
+	if (fd >= 2) {
 		lock_acquire(&filesys_lock);
-		struct file *ofile = thread_current ()->fdt[fd];
-		if (ofile != NULL) {
-			int bytes_written = file_write (ofile, buffer, length);
+		struct file *file = thread_current ()->fdt[fd];
+
+		if (file != NULL) {
+			int bytes_written = file_write (file, buffer, length);
 			lock_release(&filesys_lock);
 
 			return bytes_written;
@@ -261,34 +285,23 @@ int write (int fd, const void *buffer, unsigned length) {
 
 
 void seek (int fd, unsigned position) {
-	struct file *ofile = thread_current ()->fdt[fd];
-	if (ofile != NULL)
-		return file_seek (ofile, position);
+  struct file *file = thread_current()->fdt[fd];
+  if (file != NULL)
+    file_seek(file, position);
 }
-
 
 unsigned tell (int fd) {
-	struct file *ofile = thread_current ()->fdt[fd];
-	if (ofile != NULL)
-		return file_tell (ofile);
+  struct file *file = thread_current()->fdt[fd];
+  if (file != NULL)
+    return file_tell(file);
 }
 
-
-pid_t fork (const char *thread_name, struct intr_frame *f) {
-	check_address (thread_name);
-	return process_fork (thread_name, f);
-}
-
-
-int exec (const char *file) {
-	check_address (file);
-	struct thread *curr = thread_current ();
-	if (process_exec(file) == -1){
-		return -1;
-	}
-	exit(curr->exit_code);
-}
-
-int wait (pid_t pid) {
-	return process_wait (pid);
+void close (int fd) {
+  struct file * file = thread_current()->fdt[fd];
+  if (file != NULL) {
+    lock_acquire(&filesys_lock);
+    thread_current()->fdt[fd] = NULL;
+    file_close(thread_current()->fdt[fd]);
+    lock_release(&filesys_lock);
+  }
 }

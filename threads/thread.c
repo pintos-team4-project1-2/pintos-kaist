@@ -33,8 +33,6 @@
    that are ready to run but not actually running. */
 static struct list ready_list;
 
-static struct list all_list;
-
 /* Lisf of processes in THREAD_BLOCK state */
 static struct list sleep_list;
 
@@ -70,15 +68,12 @@ static unsigned thread_ticks;   /* # of timer ticks since last yield. */
 bool thread_mlfqs;
 
 static void kernel_thread (thread_func *, void *aux);
-
 static void idle (void *aux UNUSED);
 static struct thread *next_thread_to_run (void);
 static void init_thread (struct thread *, const char *name, int priority);
 static void do_schedule(int status);
 static void schedule (void);
 static tid_t allocate_tid (void);
-
-struct thread *get_child_process (int pid);
 
 
 
@@ -229,17 +224,23 @@ thread_create (const char *name, int priority,
 	t->tf.cs = SEL_KCSEG;
 	t->tf.eflags = FLAG_IF;
 	
-	sema_init(&t->fork_sema, 0);
-	sema_init(&t->wait_sema, 0);
-	sema_init(&t->exit_sema, 0);
+	sema_init (&t->fork_sema, 0);
+	sema_init (&t->wait_sema, 0);
+	sema_init (&t->exit_sema, 0);
 
 	t->fdt = palloc_get_page(PAL_ZERO);
-	t->next_fd = 3;
+	if (t->fdt == NULL) {
+		return TID_ERROR;
+	}
+	// t->fdt[0] = 0;
+	// t->fdt[1] = 1;
+
+	t->next_fd = 2;
 
 	t->exit_code = 0;
 
-	if (function != idle)
-		list_push_back(&current->child_list, &t->c_elem);
+	// if (function != idle)
+	list_push_back(&current->child_list, &t->c_elem);
 
 	/* Add to run queue. */
 	thread_unblock (t);
@@ -325,7 +326,6 @@ thread_exit (void) {
 #ifdef USERPROG
 	process_exit ();
 #endif
-	palloc_free_page(thread_current ()->fdt);
 
 	/* Just set our status to dying and schedule another process.
 	   We will be destroyed during the call to schedule_tail(). */
@@ -339,7 +339,6 @@ thread_exit (void) {
    may be scheduled again immediately at the scheduler's whim. */
 void
 thread_yield (void) {
-	// printf("yield exit_sema value %d\n", thread_current ()->exit_sema.value);
 
 	struct thread *current = thread_current ();
 	enum intr_level old_level;
@@ -377,20 +376,7 @@ test_max_priority (void) {
 			thread_yield ();
 	}
 }
-// void test_max_priority(void)
-// {
-// 	struct thread *curr_thread = thread_current();
-// 	struct thread *most_priority_thread = curr_thread;
-// 	if (!list_empty(&ready_list))
-// 	{
-// 		most_priority_thread = list_entry(list_front(&ready_list), struct thread, elem); // elem에 대한 thread를 가져다줌
-// 	}
 
-// 	if (most_priority_thread->priority > curr_thread->priority)
-// 	{
-// 		thread_yield();
-// 	}
-// }
 bool
 cmp_priority (const struct list_elem *a_, const struct list_elem *b_, void *aux UNUSED) {
 	struct thread *thread_a = list_entry(a_, struct thread, elem);
@@ -763,6 +749,22 @@ donate_priority (void){
 }
 
 
+// void donate_priority(void) {
+// 	struct thread *cur = thread_current();
+// 	int depth = 0;
+//   int priority = cur->priority;
+	
+// 	while ((cur->wait_on_lock != NULL) && (depth < 8)) {
+// 		struct thread *nest_thread = cur->wait_on_lock->holder;
+// 		if (nest_thread->priority < priority) {
+//     nest_thread->priority = priority;
+// 		}
+// 		cur = nest_thread;
+// 		depth++;
+// 	}
+// }
+
+
 void
 remove_with_lock (struct lock *lock) {
 	struct thread *curr = thread_current ();
@@ -777,17 +779,25 @@ remove_with_lock (struct lock *lock) {
 }
 
 
-void 
-refresh_priority (void) {
-	struct thread *curr = thread_current ();
+void refresh_priority(void) {
+	struct thread *cur = thread_current();
+	cur->priority = cur->origin_priority;
 
-	curr->priority = curr->origin_priority;
-	if (!list_empty (&curr->donations)) {
-		if (cmp_donate_priority (list_begin (&curr->donations), &curr->d_elem, NULL))
-			curr->priority = list_entry (list_begin (&curr->donations), struct thread, d_elem)->priority;
+	struct list *cur_list = &cur->donations;
+	int max_priority = cur->priority;
+	if(!list_empty(cur_list)) {
+		struct list_elem *cur_elem = list_front(cur_list);
+		while (cur_elem != list_tail(cur_list)) {
+			struct thread *target_thread = list_entry(cur_elem, struct thread, d_elem);
+			if (max_priority < target_thread->priority) {
+				max_priority = target_thread->priority;
+      }
+				
+			cur_elem = list_next(cur_elem);
+		}
+    cur->priority = max_priority;
 	}
 }
-
 
 void
 mlfqs_priority (struct thread *t) {
@@ -852,19 +862,3 @@ mlfqs_recalc (void) {
 	}
 }
 
-struct thread *get_child_process (int pid) {
-	struct list child_list = thread_current ()->child_list;
-
-	if (!list_empty(&child_list)) {
-		struct list_elem *e;
-
-		for (e = list_begin (&child_list); e != list_end (&child_list); e = list_next (e)) {
-			struct thread *now_thread = list_entry(e, struct thread, c_elem);
-			if (!is_thread(now_thread))
-				return NULL;
-			if (now_thread->tid == pid)
-				return now_thread;
-		}
-	}
-	return NULL;
-}

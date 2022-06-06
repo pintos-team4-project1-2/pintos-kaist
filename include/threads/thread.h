@@ -193,5 +193,4 @@ void mlfqs_load_avg (void);
 void mlfqs_increment (void);
 void mlfqs_recalc (void);
 
-struct thread *get_child_process (int pid);
 #endif /* threads/thread.h */
