@@ -220,7 +220,7 @@ int process_exec(void *f_name)
 	success = load(file_name, &_if);
 
 	/* If load failed, quit. */
-	palloc_free_page(file_name);
+	// palloc_free_page(file_name);
 	if (!success)
 		return -1;
 
@@ -276,11 +276,11 @@ void process_exit(void)
 		curr->fdt[i] = NULL;
 	}
 
-	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	sema_up(&curr->wait_sema);
 	sema_down(&curr->exit_sema);
-	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	
 	palloc_free_page(curr->fdt);
+
 	process_cleanup();
 }
 

@@ -55,6 +55,6 @@ cd ./build
 
 # pintos -v -k -T 20 -m 20 --fs-disk=10  -- -q  -threads-tests -f run priority-sema
 
-pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/wait-twice:wait-twice -p tests/userprog/child-simple:child-simple -- -q   -f run wait-twice
-pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/wait-bad-pid:wait-bad-pid -- -q   -f run wait-bad-pid
+# pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/wait-twice:wait-twice -p tests/userprog/child-simple:child-simple -- -q   -f run wait-twice
+# pintos -v -k -T 60 -m 20   --fs-disk=10 -p tests/userprog/wait-bad-pid:wait-bad-pid -- -q   -f run wait-bad-pid
 pintos -v -k -T 600 -m 20 -m 20   --fs-disk=10 -p tests/userprog/no-vm/multi-oom:multi-oom -- -q   -f run multi-oom

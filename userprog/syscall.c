@@ -130,12 +130,9 @@ int exec(const char *file)
 {
 	check_address(file);
 
-	char *fn_copy = palloc_get_page(PAL_ZERO);
-	if (!fn_copy)
-	{
-		exit(-1);
-	}
-	strlcpy(fn_copy, file, strlen(file) + 1);
+	char *fn_copy[64];
+
+	memcpy(fn_copy, file, strlen(file) + 1);
 	if (process_exec(fn_copy) == -1)
 	{
 		exit(-1);
@@ -167,16 +164,13 @@ int open(const char *file)
 
 	if (current->next_fd < 128)
 	{
-		// lock_acquire (&filesys_lock);
 		struct file *new_file = filesys_open(file);
 
 		if (new_file != NULL)
 		{
 			current->fdt[current->next_fd] = new_file;
-			// lock_release (&filesys_lock);
 			return current->next_fd++;
 		}
-		// lock_release (&filesys_lock);
 	}
 	return -1;
 }

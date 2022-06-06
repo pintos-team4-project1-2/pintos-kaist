@@ -224,25 +224,19 @@ tid_t thread_create(const char *name, int priority,
 	sema_init(&t->exit_sema, 0);
 
 	t->fdt = palloc_get_page(PAL_ZERO);
-	if (t->fdt == NULL)
-	{
-		return TID_ERROR;
-	}
-	// t->fdt[0] = 0;
-	// t->fdt[1] = 1;
+
+	t->fdt[0] = 0;
+	t->fdt[1] = 1;
 
 	t->next_fd = 2;
 
 	t->exit_code = 0;
 
-	// if (function != idle)
 	list_push_back(&current->child_list, &t->c_elem);
 
 	/* Add to run queue. */
 	thread_unblock(t);
 
-	// if (current->priority < priority)
-	// 	thread_yield ();
 	test_max_priority();
 
 	return tid;
@@ -769,21 +763,6 @@ void donate_priority(void)
 	}
 }
 
-// void donate_priority(void) {
-// 	struct thread *cur = thread_current();
-// 	int depth = 0;
-//   int priority = cur->priority;
-
-// 	while ((cur->wait_on_lock != NULL) && (depth < 8)) {
-// 		struct thread *nest_thread = cur->wait_on_lock->holder;
-// 		if (nest_thread->priority < priority) {
-//     nest_thread->priority = priority;
-// 		}
-// 		cur = nest_thread;
-// 		depth++;
-// 	}
-// }
-
 void remove_with_lock(struct lock *lock)
 {
 	struct thread *curr = thread_current();
@@ -815,7 +794,6 @@ void refresh_priority(void)
 			{
 				max_priority = target_thread->priority;
 			}
-
 			cur_elem = list_next(cur_elem);
 		}
 		cur->priority = max_priority;
