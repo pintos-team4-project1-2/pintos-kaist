@@ -5,6 +5,7 @@
 #include <list.h>
 #include <stdint.h>
 #include "threads/interrupt.h"
+#include "threads/synch.h"
 #ifdef VM
 #include "vm/vm.h"
 #endif
@@ -12,6 +13,8 @@
 #define NICE_DEFAULT 0
 #define RECENT_CPU_DEFAULT 0
 #define LOAD_AVG_DEFAULT 0
+
+#define FILE_NUM 128
 
 
 /* States in a thread's life cycle. */
@@ -110,6 +113,8 @@ struct  thread {
 
 	/* Owned by thread.c. */
 	struct intr_frame tf;               /* Information for switching */
+	struct intr_frame temp_tf;
+
 	unsigned magic;                     /* Detects stack overflow. */
 
 	int64_t wakeup_tick; 					/* what tick to wake up */
@@ -118,9 +123,22 @@ struct  thread {
 	struct lock *wait_on_lock;
 	struct list donations;
 	struct list_elem d_elem;
-
+	
 	int nice;
 	int recent_cpu;
+
+	struct file **fdt;
+	struct file *run_file;
+	int next_fd;
+
+	struct semaphore wait_sema;
+	struct semaphore fork_sema;
+	struct semaphore exit_sema;
+	
+	struct list child_list;
+	struct list_elem c_elem;
+
+	int exit_code;
 };
 
 /* If false (default), use round-robin scheduler.
@@ -163,6 +181,7 @@ void thread_awake (int64_t ticks);
 void test_max_priority (void);
 
 bool cmp_priority (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
+bool cmp_donate_priority (const struct list_elem *a_, const struct list_elem *b_, void *aux UNUSED);
 
 void donate_priority (void);
 void remove_with_lock (struct lock *lock);

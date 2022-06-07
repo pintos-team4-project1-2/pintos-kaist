@@ -27,6 +27,7 @@
    */
 
 #include "threads/synch.h"
+#include "threads/thread.h"
 #include <stdio.h>
 #include <string.h>
 #include "threads/interrupt.h"
@@ -41,7 +42,6 @@
 
    - up or "V": increment the value (and wake up one waiting
    thread, if any). */
-
 
 
 void
@@ -68,10 +68,15 @@ sema_down (struct semaphore *sema) {
 	ASSERT (!intr_context ());
 
 	old_level = intr_disable ();
+
 	while (sema->value == 0) {
+
 		list_insert_ordered (&sema->waiters, &thread_current ()->elem, cmp_priority, NULL);
+
 		thread_block ();
 	}
+
+
 	sema->value--;
 	intr_set_level (old_level);
 }
@@ -108,6 +113,7 @@ sema_try_down (struct semaphore *sema) {
 void
 sema_up (struct semaphore *sema) {
 	enum intr_level old_level;
+	struct thread *t = thread_current ();
 
 	ASSERT (sema != NULL);
 	old_level = intr_disable ();
@@ -116,11 +122,9 @@ sema_up (struct semaphore *sema) {
 		list_sort (&sema->waiters, cmp_priority, NULL);
 		thread_unblock (list_entry (list_pop_front (&sema->waiters), struct thread, elem));
 	}
-	sema->value++;	
-	intr_set_level (old_level);
-	
-
+	sema->value++;
 	test_max_priority ();	
+	intr_set_level (old_level);
 }
 
 static void sema_test_helper (void *sema_);
@@ -194,13 +198,13 @@ lock_acquire (struct lock *lock) {
 	ASSERT (lock != NULL);
 	ASSERT (!intr_context ());
 	ASSERT (!lock_held_by_current_thread (lock));
-	
 	if(lock->holder != NULL) {
 		struct thread *curr = thread_current ();
 		
 		curr->wait_on_lock = lock;
 		if(!thread_mlfqs) {
 			list_push_back (&lock->holder->donations, &curr->d_elem);
+			// list_insert_ordered(&lock->holder->donations, &curr->d_elem, cmp_donate_priority, NULL);
 			donate_priority ();
 		}
 	}
@@ -237,7 +241,7 @@ lock_try_acquire (struct lock *lock) {
    handler. */
 void
 lock_release (struct lock *lock) {
-
+	struct thread *t = thread_current ();
 	ASSERT (lock != NULL);
 	ASSERT (lock_held_by_current_thread (lock));
 
